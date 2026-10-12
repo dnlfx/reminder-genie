@@ -342,7 +342,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenie;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -372,7 +372,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenie;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -388,7 +388,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReminderGenie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReminderGenie";
 			};
@@ -405,7 +405,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReminderGenie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReminderGenie";
 			};

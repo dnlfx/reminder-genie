@@ -21,7 +21,7 @@ Tell it when you started the current one and how often it needs replacing. It sh
 
 ## Requirements
 
-- Xcode 26 or later (the Undo toast uses Liquid Glass on iOS 26)
+- Xcode 26 or later (Swift 6 language mode; the Undo toast uses Liquid Glass on iOS 26)
 - iOS 17 or later
 
 ## Build and run
@@ -47,6 +47,7 @@ ReminderGenie/
   Models/TrackedItem.swift        SwiftData models: TrackedItem, ReplacementLog
   Models/ItemDraft.swift          Editable copy used by the editor
   Models/ItemTemplate.swift       Built-in templates and icon choices
+  Models/Schema.swift             Versioned schema and migration plan
   Services/NotificationManager.swift  Scheduling, notification actions, badge, undo
   Intents/ReminderGenieIntents.swift  Siri and Shortcuts (App Intents)
   Views/                          List, detail, editor, add-from-template, settings
@@ -58,6 +59,8 @@ ReminderGenieTests/               Swift Testing unit tests for Logic/
 - iOS keeps at most 64 pending local notifications per app. Each item uses up to five (heads-up, due, three follow-ups). The app plans all of them together and schedules the soonest 60, leaving room for the low-stock nudge and the test notification, and rebuilds them every time it opens or an item changes.
 - Each reminder carries the badge count for the moment it's delivered, so the badge updates without opening the app.
 - Errors that would otherwise be silent (saving, scheduling) are logged with `os.Logger` under the app's bundle identifier; filter Console.app by it when chasing a bug.
+- The database uses a versioned schema (`Models/Schema.swift`). When a model changes, add a new schema version and migration stage there rather than editing the models in place. If the database ever fails to open, the app shows an explanation instead of crashing, and leaves the file alone.
+- `Design/AppIcon.icon` is the layered Icon Composer source for the iOS 26 icon.
 - See [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) for what's left before App Store submission.
 - Notifications are rebuilt when the app becomes active, so time zone changes and edits are picked up automatically.
 

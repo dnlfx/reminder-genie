@@ -43,13 +43,23 @@ final class NotificationManager: NSObject, ObservableObject {
     // MARK: Permission
 
     func refreshAuthorizationStatus() async {
-        authorizationStatus = await center.notificationSettings().authorizationStatus
+        // Only the status crosses back to the main actor; the settings object isn't Sendable.
+        authorizationStatus = await withCheckedContinuation { continuation in
+            center.getNotificationSettings { @Sendable settings in
+                continuation.resume(returning: settings.authorizationStatus)
+            }
+        }
     }
 
     func requestAuthorizationIfNeeded() async {
         await refreshAuthorizationStatus()
         guard authorizationStatus == .notDetermined else { return }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { @Sendable _, error in
+                if let error { Log.notifications.error("Couldn't request permission: \(error.localizedDescription, privacy: .public)") }
+                continuation.resume()
+            }
+        }
         await refreshAuthorizationStatus()
     }
 
@@ -99,7 +109,8 @@ final class NotificationManager: NSObject, ObservableObject {
                 content: content,
                 trigger: trigger
             )
-            center.add(request) { error in
+            // @Sendable so the handler isn't treated as main-actor code when iOS calls it on a background queue.
+            center.add(request) { @Sendable error in
                 if let error { Log.notifications.error("Couldn't schedule a reminder: \(error.localizedDescription, privacy: .public)") }
             }
         }
@@ -156,7 +167,7 @@ final class NotificationManager: NSObject, ObservableObject {
         let all = items ?? fetchAllItems()
         let now = Date.now
         let count = all.filter { !$0.isPaused && $0.schedule.needsReplacing(at: now) }.count
-        center.setBadgeCount(count) { error in
+        center.setBadgeCount(count) { @Sendable error in
             if let error { Log.notifications.error("Couldn't set the badge: \(error.localizedDescription, privacy: .public)") }
         }
     }
@@ -268,10 +279,8 @@ final class NotificationManager: NSObject, ObservableObject {
         content.body = "This is what a reminder looks like. Long-press real ones to log a replacement or snooze."
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-        do {
-            try await center.add(UNNotificationRequest(identifier: "test-notification", content: content, trigger: trigger))
-        } catch {
-            Log.notifications.error("Couldn't send the test notification: \(error.localizedDescription, privacy: .public)")
+        center.add(UNNotificationRequest(identifier: "test-notification", content: content, trigger: trigger)) { @Sendable error in
+            if let error { Log.notifications.error("Couldn't send the test notification: \(error.localizedDescription, privacy: .public)") }
         }
     }
 

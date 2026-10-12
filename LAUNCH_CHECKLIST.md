@@ -5,6 +5,7 @@ What's left between this repo and an App Store release, in the order it needs do
 ## On your Mac, before anything else
 
 - [ ] Open the project in Xcode 26. If it offers **Update to recommended settings**, accept it, then build. The code hasn't been compiled since the go-live fixes, because they were made without Xcode.
+- [ ] The project is now in Swift 6 language mode. Fix anything the compiler flags; the concurrency changes were made by reading the code, not compiling it.
 - [ ] Run the tests (⌘U). `ScheduleTests` covers the date math and reminder plan, including the snooze rules.
 - [ ] Smoke test on a real iPhone:
   - Add an item with a 1-day interval, last replaced yesterday, reminder a couple of minutes out. Lock the phone. The reminder should arrive and the badge should read 1.
@@ -12,6 +13,13 @@ What's left between this repo and an App Store release, in the order it needs do
   - Add an item due in a few days with a heads-up today, tap **Remind me tomorrow** on the heads-up, and check the detail screen still shows the due-day reminder.
   - Swipe away the newest history entry on an item and confirm the countdown goes back to the previous one.
   - Try Siri: "What's due in Reminder Genie".
+
+## App icon for iOS 26
+
+The asset catalog now has dark and tinted versions of the icon, so it already adapts on iOS 18 and 26. For the full Liquid Glass look:
+
+- [ ] Open `Design/AppIcon.icon` in Icon Composer (it ships with Xcode 26). It holds the icon as separate layers (track, progress ring, star, sparkle) over the purple gradient. Check the Default, Dark, Clear and Tinted previews and adjust glass and shadow to taste.
+- [ ] Drag `AppIcon.icon` into the ReminderGenie folder in Xcode and remove the AppIcon set from `Assets.xcassets`, so the target's app icon name `AppIcon` points at the new file. Xcode generates the older-iOS sizes from it.
 
 ## App Store Connect
 
@@ -25,9 +33,6 @@ What's left between this repo and an App Store release, in the order it needs do
 
 ## Worth doing before or soon after 1.0
 
-- **Versioned SwiftData schema.** Wrap today's models in a `VersionedSchema` (V1) with a `SchemaMigrationPlan` before the first public build, so later model changes can migrate safely. Today a store that fails to open stops the app at launch (`fatalError` in `AppModelContainer`).
-- **iOS 26 app icon.** Rebuild the icon in Icon Composer with dark, tinted and clear variants; the current single PNG looks flat next to system icons on iOS 26.
-- **Swift 6 language mode.** The project is on Swift 5 mode. Moving to Swift 6 (or turning on Approachable Concurrency) catches threading bugs at compile time; do it with Xcode open, since it needs the compiler's feedback.
 - **Widgets.** A "what's due next" Home and Lock Screen widget is the most requested feature for this kind of app. It needs an App Group shared between the app and widget, which is a signing change.
 - **Time-sensitive reminders.** With the Time Sensitive Notifications capability, due-day reminders can break through Focus. Also a signing change.
 - **Localization.** Strings are English-only and built with interpolation; moving to a String Catalog is the first step.
