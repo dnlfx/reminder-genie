@@ -97,6 +97,9 @@ struct ItemListView: View {
             if let item = items.first(where: { $0.id == id }) {
                 showingAdd = false
                 showingSettings = false
+                editingItem = nil
+                starterDraft = nil
+                pendingDelete = nil
                 path = [item]
             }
             notifications.pendingItemID = nil
@@ -113,7 +116,9 @@ struct ItemListView: View {
     // MARK: List
 
     private var list: some View {
-        List {
+        // Grouping does date math for every item, so do it once per update.
+        let sections = self.sections
+        return List {
             if search.isEmpty {
                 if notifications.authorizationStatus == .denied {
                     Section { NotificationsOffBanner() }
@@ -162,8 +167,11 @@ struct ItemListView: View {
     private func contextMenu(for item: TrackedItem) -> some View {
         if !item.isPaused {
             Button("Mark as Replaced", systemImage: "checkmark.circle") { replace(item) }
-            Menu("Snooze Reminder", systemImage: "moon.zzz") {
-                SnoozeOptions(item: item)
+            // Same rule as the detail screen: nothing to snooze until it's nearly due.
+            if status(item) != .ok {
+                Menu("Snooze Reminder", systemImage: "moon.zzz") {
+                    SnoozeOptions(item: item)
+                }
             }
         }
         Button(item.isPaused ? "Resume Reminders" : "Pause Reminders", systemImage: item.isPaused ? "play.circle" : "pause.circle") {

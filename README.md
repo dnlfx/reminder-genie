@@ -16,12 +16,12 @@ Tell it when you started the current one and how often it needs replacing. It sh
 - **Reorder link** per item, so restocking is one tap from the item, the row's menu or the low-stock warning.
 - **Siri and Shortcuts**: "Log a replacement in Reminder Genie", "Mark contact lenses replaced in Reminder Genie" or "What's due in Reminder Genie", no setup needed.
 - **Snooze**, **pause**, per-item reminder time, notes (brand, prescription, where to buy), icons and colors.
-- **App badge** shows how many items are overdue, and the list warns you if notifications are turned off. Settings can send a test notification.
+- **App badge** shows how many items are due today or overdue, and stays current while the app is closed, and the list warns you if notifications are turned off. Settings can send a test notification.
 - Everything stays on the device (SwiftData). No account, no network.
 
 ## Requirements
 
-- Xcode 16 or later (the project uses Xcode 16's folder-synced groups)
+- Xcode 26 or later (the Undo toast uses Liquid Glass on iOS 26)
 - iOS 17 or later
 
 ## Build and run
@@ -42,6 +42,7 @@ If you prefer [XcodeGen](https://github.com/yonaskolb/XcodeGen), `project.yml` r
 ```
 ReminderGenie/
   ReminderGenieApp.swift          App entry, shared SwiftData container
+  PrivacyInfo.xcprivacy           Privacy manifest (no tracking, no data collected)
   Logic/Schedule.swift            Pure date math: due dates, status, reminder plan, history stats
   Models/TrackedItem.swift        SwiftData models: TrackedItem, ReplacementLog
   Models/ItemDraft.swift          Editable copy used by the editor
@@ -54,7 +55,10 @@ ReminderGenieTests/               Swift Testing unit tests for Logic/
 
 ## Notes
 
-- iOS keeps at most 64 pending local notifications per app. Each item uses up to five (heads-up, due, three follow-ups), and the app rebuilds them every time it opens, so with many items the soonest ones are always the ones scheduled.
+- iOS keeps at most 64 pending local notifications per app. Each item uses up to five (heads-up, due, three follow-ups). The app plans all of them together and schedules the soonest 60, leaving room for the low-stock nudge and the test notification, and rebuilds them every time it opens or an item changes.
+- Each reminder carries the badge count for the moment it's delivered, so the badge updates without opening the app.
+- Errors that would otherwise be silent (saving, scheduling) are logged with `os.Logger` under the app's bundle identifier; filter Console.app by it when chasing a bug.
+- See [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) for what's left before App Store submission.
 - Notifications are rebuilt when the app becomes active, so time zone changes and edits are picked up automatically.
 
 ## Ideas for next steps

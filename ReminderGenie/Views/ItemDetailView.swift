@@ -226,6 +226,7 @@ struct ItemDetailView: View {
 
 private struct HistorySection: View {
     let item: TrackedItem
+    @EnvironmentObject private var notifications: NotificationManager
 
     var body: some View {
         let logs = item.sortedLogs
@@ -266,9 +267,7 @@ private struct HistorySection: View {
                 }
                 .swipeActions {
                     Button("Delete", role: .destructive) {
-                        item.logs?.removeAll { $0.persistentModelID == log.persistentModelID }
-                        item.modelContext?.delete(log)
-                        try? item.modelContext?.save()
+                        withAnimation { notifications.deleteLog(log, from: item) }
                     }
                 }
             }
@@ -276,7 +275,7 @@ private struct HistorySection: View {
             Text("History")
         } footer: {
             if !logs.isEmpty {
-                Text("Swipe an entry to delete it. To log one you forgot, tap Mark as Replaced and change the date.")
+                Text("Swipe an entry to delete it. Deleting the latest one rewinds the countdown to the one before. To log one you forgot, tap Mark as Replaced and change the date.")
             }
         }
     }
