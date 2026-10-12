@@ -68,9 +68,10 @@ final class SmokeTests: XCTestCase {
         let before = try XCTUnwrap(daysLeft(countdown.label), countdown.label)
 
         // Entries are newest first, so the first one started the current cycle.
+        // History sits below the fold, and the list only creates rows once they scroll into view.
         let latest = app.descendants(matching: .any).matching(identifier: "history-entry").firstMatch
-        XCTAssertTrue(latest.waitForExistence(timeout: 5))
-        for _ in 0..<5 where !latest.isHittable { app.swipeUp() }
+        for _ in 0..<6 where !(latest.exists && latest.isHittable) { app.swipeUp() }
+        XCTAssertTrue(latest.waitForExistence(timeout: 5), "Couldn't find the history entries")
         latest.swipeLeft()
         let delete = app.buttons["Delete"]
         if delete.waitForExistence(timeout: 1) { delete.tap() }
