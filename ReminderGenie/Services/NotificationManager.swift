@@ -91,17 +91,12 @@ final class NotificationManager: NSObject, ObservableObject {
         let items = fetchAllItems()
         center.removePendingNotificationRequests(withIdentifiers: items.flatMap { identifiers(for: $0.id) })
 
-        let now = Date.now
-        let active = items.filter { !$0.isPaused }
-        let schedules = active.map(\.schedule)
-        let planned = active
-            .flatMap { item in plan(for: item, now: now).map { (item: item, reminder: $0) } }
-            .sorted { $0.reminder.fireDate < $1.reminder.fireDate }
-            .prefix(ReminderPlanner.pendingLimit)
-
-        for (item, reminder) in planned {
+        let itemsByID = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for scheduled in ReminderPlanner.schedule(items.map(\.reminderInput), now: .now) {
+            guard let item = itemsByID[scheduled.itemID] else { continue }
+            let reminder = scheduled.reminder
             let content = makeContent(for: reminder, of: item)
-            content.badge = NSNumber(value: schedules.filter { $0.needsReplacing(at: reminder.fireDate) }.count)
+            content.badge = NSNumber(value: scheduled.badge)
             let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.fireDate)
             let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
             let request = UNNotificationRequest(
@@ -115,18 +110,6 @@ final class NotificationManager: NSObject, ObservableObject {
             }
         }
         updateBadge(items: items)
-    }
-
-    private func plan(for item: TrackedItem, now: Date) -> [PlannedReminder] {
-        ReminderPlanner.plan(
-            schedule: item.schedule,
-            hour: item.reminderHour,
-            minute: item.reminderMinute,
-            leadDays: item.leadDays,
-            remindDailyWhenOverdue: item.remindDailyWhenOverdue,
-            snoozedUntil: item.snoozedUntil,
-            now: now
-        )
     }
 
     private func makeContent(for reminder: PlannedReminder, of item: TrackedItem) -> UNMutableNotificationContent {
@@ -166,7 +149,7 @@ final class NotificationManager: NSObject, ObservableObject {
     func updateBadge(items: [TrackedItem]? = nil) {
         let all = items ?? fetchAllItems()
         let now = Date.now
-        let count = all.filter { !$0.isPaused && $0.schedule.needsReplacing(at: now) }.count
+        let count = ReminderPlanner.badgeCount(all.map(\.reminderInput), at: now)
         center.setBadgeCount(count) { @Sendable error in
             if let error { Log.notifications.error("Couldn't set the badge: \(error.localizedDescription, privacy: .public)") }
         }
@@ -238,16 +221,9 @@ final class NotificationManager: NSObject, ObservableObject {
         reschedule(item)
     }
 
-    /// Removes a history entry. Deleting the entry that started the current cycle rewinds the
-    /// countdown to the entry before it, so a mistaken log can be taken back after Undo has gone.
+    /// Removes a history entry, rewinding the countdown if it was the latest (see `TrackedItem.removeLog`).
     func deleteLog(_ log: ReplacementLog, from item: TrackedItem) {
-        let remaining = item.sortedLogs.filter { $0.persistentModelID != log.persistentModelID }
-        if log.date == item.startDate, let previous = remaining.first {
-            item.startDate = previous.date
-            item.snoozedUntil = nil
-        }
-        item.logs?.removeAll { $0.persistentModelID == log.persistentModelID }
-        item.modelContext?.delete(log)
+        item.removeLog(log)
         save(item.modelContext)
         reschedule(item)
     }
@@ -268,7 +244,7 @@ final class NotificationManager: NSObject, ObservableObject {
     /// The next notification that will fire for an item, for display in the detail screen.
     func nextReminderDate(for item: TrackedItem, now: Date = .now) -> Date? {
         guard !item.isPaused else { return nil }
-        return plan(for: item, now: now).map(\.fireDate).min()
+        return ReminderPlanner.plan(item.reminderInput, now: now).map(\.fireDate).min()
     }
 
     /// Sends a sample reminder a few seconds from now so people can check sounds and banners.

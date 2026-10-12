@@ -114,7 +114,103 @@ final class SmokeTests: XCTestCase {
         XCTAssertTrue(waitFor(row, labelContaining: "Due in 14 days", timeout: 10), "Replaced it should start a new cycle: \(row.label)")
     }
 
+    @MainActor
+    func testNewItemNeedsANameAndAValidLink() throws {
+        let app = launch(.empty)
+        app.buttons["Add Your First Item"].tap()
+        app.collectionViews.staticTexts["Custom Item"].tap()
+
+        let add = app.navigationBars["New Item"].buttons["Add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        XCTAssertFalse(add.isEnabled, "Add should be disabled without a name")
+
+        let name = app.textFields["Name, e.g. Contact lenses"]
+        name.tap()
+        name.typeText("Furnace filter")
+        XCTAssertTrue(add.isEnabled, "Add should be enabled once there's a name")
+
+        let link = app.textFields["Reorder link (optional)"]
+        for _ in 0..<5 where !(link.exists && link.isHittable) { app.swipeUp() }
+        link.tap()
+        link.typeText("not a link")
+        XCTAssertFalse(add.isEnabled, "Add should be disabled with a broken reorder link")
+        XCTAssertTrue(app.staticTexts["That doesn't look like a web address. Try something like amazon.com/your-item."].exists)
+
+        link.typeText(XCUIKeyboardKey.delete.rawValue.repeated(10))
+        link.typeText("example.com/filters")
+        XCTAssertTrue(add.isEnabled)
+        add.tap()
+        allowNotificationsIfAsked()
+        XCTAssertTrue(itemRow("Furnace filter", in: app).waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testPausingAndResumingFromTheContextMenu() throws {
+        let app = launch(.standard)
+        let row = itemRow("Water filter", in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+
+        row.press(forDuration: 1.0)
+        app.buttons["Pause Reminders"].tap()
+        XCTAssertTrue(waitFor(row, labelContaining: "Reminders paused"), row.label)
+        XCTAssertTrue(app.staticTexts["Paused"].exists, "A Paused section should appear")
+
+        row.press(forDuration: 1.0)
+        app.buttons["Resume Reminders"].tap()
+        XCTAssertTrue(waitFor(row, labelContaining: "Due in"), row.label)
+    }
+
+    @MainActor
+    func testMarkingReplacedFromTheDetailScreenUsesASpare() throws {
+        let app = launch(.standard)
+        itemRow("Contact lenses", in: app).tap()
+
+        let countdown = app.descendants(matching: .any).matching(identifier: "countdown").firstMatch
+        XCTAssertTrue(countdown.waitForExistence(timeout: 5))
+        XCTAssertTrue(countdown.label.contains("Overdue by 2 days"), countdown.label)
+
+        app.buttons["Mark as Replaced"].tap()
+        XCTAssertTrue(app.staticTexts["Spares after this"].waitForExistence(timeout: 5))
+        app.navigationBars["Replace Contact lenses"].buttons["Save"].tap()
+
+        XCTAssertTrue(waitFor(countdown, labelContaining: "Due in 14 days"), countdown.label)
+        // The stepper reads "Spares on hand" with the count in its label or its value, depending on iOS version.
+        let sparesRow = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Spares on hand")).firstMatch
+        for _ in 0..<4 where !sparesRow.exists { app.swipeUp() }
+        let twoLeft = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label BEGINSWITH %@ AND (label CONTAINS %@ OR value == %@)", "Spares on hand", "2", "2"
+        )).firstMatch
+        XCTAssertTrue(twoLeft.waitForExistence(timeout: 3), "One of the 3 spares should be used: \(sparesRow.label)")
+    }
+
+    @MainActor
+    func testDeletingAnItemAsksFirst() throws {
+        let app = launch(.standard)
+        let row = itemRow("Water filter", in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+
+        row.swipeLeft()
+        // A long swipe triggers Delete straight away; a short one only reveals the buttons.
+        let confirm = confirmationButton("Delete", in: app)
+        if !confirm.waitForExistence(timeout: 1) {
+            app.collectionViews.buttons["Delete"].tap()
+        }
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Deleting should ask for confirmation")
+        XCTAssertTrue(row.exists, "Nothing is deleted until it's confirmed")
+
+        confirm.tap()
+        XCTAssertTrue(row.waitForNonExistence(timeout: 5), "The item should be gone")
+        XCTAssertTrue(itemRow("Contact lenses", in: app).exists, "Other items stay")
+    }
+
     // MARK: Helpers
+
+    /// The confirm button of a confirmation dialog, which iOS shows as a sheet, alert or popover.
+    @MainActor
+    private func confirmationButton(_ title: String, in app: XCUIApplication) -> XCUIElement {
+        let inDialog = NSPredicate(format: "elementType IN %@", [XCUIElement.ElementType.sheet.rawValue, XCUIElement.ElementType.alert.rawValue, XCUIElement.ElementType.popover.rawValue])
+        return app.descendants(matching: .any).matching(inDialog).buttons[title].firstMatch
+    }
 
     /// Matches `UITestSupport.Scenario` in the app.
     enum Scenario: String {
@@ -148,6 +244,10 @@ final class SmokeTests: XCTestCase {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", text), object: element)
         return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
     }
+}
+
+private extension String {
+    func repeated(_ count: Int) -> String { String(repeating: self, count: count) }
 }
 
 /// The number in "Due in 82 days".

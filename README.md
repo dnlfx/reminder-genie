@@ -35,8 +35,8 @@ To try a reminder quickly, add a custom item with a 1-day interval, set "Last re
 
 Run the tests with **Product › Test** (⌘U), on a simulator or your connected iPhone:
 
-- `ReminderGenieTests` (unit tests) cover the date math and the reminder plan.
-- `ReminderGenieUITests` drive the real app: add an item from a template, swipe to replace and undo, check Snooze only appears once an item is nearly due, rewind the countdown by deleting a history entry, and wait for a real reminder notification then tap **Replaced it** on it. The notification test waits up to two minutes for the reminder to arrive.
+- `ReminderGenieTests` (unit tests, a few seconds) cover the date math, each item's reminder plan, the whole-app schedule (soonest first, the 60-reminder cap, badge counts, pausing), replacing and spares, backdating, history rewinds, the editor's validation, and that every template and icon exists in SF Symbols.
+- `ReminderGenieUITests` (about three minutes) drive the real app: adding from a template, the editor's name and link validation, swipe to replace and Undo, replacing from the detail screen, pausing and resuming, Snooze only once an item is nearly due, rewinding the countdown from history, deleting with confirmation, and a real reminder handled with **Replaced it** from the notification.
 
 The UI tests launch the app with `-ui-testing`, which swaps in an empty in-memory database with sample data (`Services/UITestSupport.swift`, debug builds only), so they never touch your real items. To run only the unit tests, use the diamond next to `ScheduleTests` or ⌃⌥⌘U on that file.
 

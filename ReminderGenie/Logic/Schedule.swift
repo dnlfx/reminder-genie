@@ -174,6 +174,57 @@ enum ReminderPlanner {
     }
 }
 
+/// One item's reminder settings, copied out of SwiftData so scheduling can be tested on its own.
+struct ReminderInput: Sendable {
+    var id: UUID
+    var schedule: Schedule
+    var hour: Int
+    var minute: Int
+    var leadDays: Int
+    var remindDailyWhenOverdue: Bool
+    var snoozedUntil: Date?
+    var isPaused: Bool
+}
+
+/// A reminder to hand to iOS, with the badge it should set when delivered.
+struct ScheduledReminder: Equatable, Sendable {
+    var itemID: UUID
+    var reminder: PlannedReminder
+    var badge: Int
+}
+
+extension ReminderPlanner {
+    static func plan(_ input: ReminderInput, now: Date) -> [PlannedReminder] {
+        guard !input.isPaused else { return [] }
+        return plan(
+            schedule: input.schedule,
+            hour: input.hour,
+            minute: input.minute,
+            leadDays: input.leadDays,
+            remindDailyWhenOverdue: input.remindDailyWhenOverdue,
+            snoozedUntil: input.snoozedUntil,
+            now: now
+        )
+    }
+
+    /// Every item's reminders together, soonest first and capped at `limit`, each carrying the
+    /// number of items that will need replacing when it's delivered.
+    static func schedule(_ inputs: [ReminderInput], now: Date, limit: Int = pendingLimit) -> [ScheduledReminder] {
+        inputs
+            .flatMap { input in plan(input, now: now).map { (input.id, $0) } }
+            .sorted { $0.1.fireDate < $1.1.fireDate }
+            .prefix(limit)
+            .map { id, reminder in
+                ScheduledReminder(itemID: id, reminder: reminder, badge: badgeCount(inputs, at: reminder.fireDate))
+            }
+    }
+
+    /// Items due today or overdue at a moment, ignoring paused ones.
+    static func badgeCount(_ inputs: [ReminderInput], at date: Date) -> Int {
+        inputs.filter { !$0.isPaused && $0.schedule.needsReplacing(at: date) }.count
+    }
+}
+
 /// Stats derived from an item's replacement history.
 enum HistoryStats {
     /// The time between two consecutive replacements, compared with the item's schedule.
