@@ -75,6 +75,11 @@ struct Schedule: Sendable {
         return calendar.dateComponents([.day], from: from, to: to).day ?? 0
     }
 
+    /// Due today or overdue: what the app badge counts.
+    func needsReplacing(at now: Date) -> Bool {
+        daysRemaining(at: now) <= 0
+    }
+
     func status(at now: Date, dueSoonDays: Int) -> ItemStatus {
         let days = daysRemaining(at: now)
         if days < 0 { return .overdue }
@@ -113,6 +118,10 @@ enum ReminderPlanner {
     /// How many daily follow-ups to send after the due date when an item is still not replaced.
     static let overdueFollowUps = 3
 
+    /// iOS keeps at most 64 pending notifications per app. Item reminders stay under that,
+    /// leaving room for the low-stock nudge and the test notification.
+    static let pendingLimit = 60
+
     /// Every notification id that could exist for an item, so they can all be cancelled at once.
     static func allIdentifierSuffixes() -> [String] {
         ["lead", "due"] + (1...overdueFollowUps).map { "nag-\($0)" }
@@ -131,15 +140,21 @@ enum ReminderPlanner {
         let calendar = schedule.calendar
         var result: [PlannedReminder] = []
 
-        // A snooze replaces the regular due reminder and follow-ups start from it.
+        let regular = schedule.reminderDate(hour: hour, minute: minute)
         let base: Date
-        if let snoozedUntil, snoozedUntil > now {
+        if let snoozedUntil, snoozedUntil >= regular {
+            // Snoozed past the due reminder: the snooze becomes the due reminder and follow-ups
+            // count from it, even after it has fired.
             base = snoozedUntil
         } else {
-            base = schedule.reminderDate(hour: hour, minute: minute)
-            if leadDays > 0,
-               let lead = calendar.date(byAdding: .day, value: -leadDays, to: base),
-               lead > now, lead > schedule.startDate {
+            base = regular
+            if let snoozedUntil, snoozedUntil > now {
+                // Snoozed before the due day (say, "Remind me tomorrow" on a heads-up): the snooze
+                // takes the heads-up's place and the due reminder stays where it was.
+                result.append(PlannedReminder(kind: .headsUp, fireDate: snoozedUntil))
+            } else if leadDays > 0,
+                      let lead = calendar.date(byAdding: .day, value: -leadDays, to: base),
+                      lead > now, lead > schedule.startDate {
                 result.append(PlannedReminder(kind: .headsUp, fireDate: lead))
             }
         }
@@ -156,6 +171,57 @@ enum ReminderPlanner {
             }
         }
         return result
+    }
+}
+
+/// One item's reminder settings, copied out of SwiftData so scheduling can be tested on its own.
+struct ReminderInput: Sendable {
+    var id: UUID
+    var schedule: Schedule
+    var hour: Int
+    var minute: Int
+    var leadDays: Int
+    var remindDailyWhenOverdue: Bool
+    var snoozedUntil: Date?
+    var isPaused: Bool
+}
+
+/// A reminder to hand to iOS, with the badge it should set when delivered.
+struct ScheduledReminder: Equatable, Sendable {
+    var itemID: UUID
+    var reminder: PlannedReminder
+    var badge: Int
+}
+
+extension ReminderPlanner {
+    static func plan(_ input: ReminderInput, now: Date) -> [PlannedReminder] {
+        guard !input.isPaused else { return [] }
+        return plan(
+            schedule: input.schedule,
+            hour: input.hour,
+            minute: input.minute,
+            leadDays: input.leadDays,
+            remindDailyWhenOverdue: input.remindDailyWhenOverdue,
+            snoozedUntil: input.snoozedUntil,
+            now: now
+        )
+    }
+
+    /// Every item's reminders together, soonest first and capped at `limit`, each carrying the
+    /// number of items that will need replacing when it's delivered.
+    static func schedule(_ inputs: [ReminderInput], now: Date, limit: Int = pendingLimit) -> [ScheduledReminder] {
+        inputs
+            .flatMap { input in plan(input, now: now).map { (input.id, $0) } }
+            .sorted { $0.1.fireDate < $1.1.fireDate }
+            .prefix(limit)
+            .map { id, reminder in
+                ScheduledReminder(itemID: id, reminder: reminder, badge: badgeCount(inputs, at: reminder.fireDate))
+            }
+    }
+
+    /// Items due today or overdue at a moment, ignoring paused ones.
+    static func badgeCount(_ inputs: [ReminderInput], at date: Date) -> Int {
+        inputs.filter { !$0.isPaused && $0.schedule.needsReplacing(at: date) }.count
     }
 }
 

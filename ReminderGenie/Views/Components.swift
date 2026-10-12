@@ -22,6 +22,7 @@ struct UndoToast: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+            .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
             Button("Undo", action: onUndo)
                 .font(.subheadline.weight(.semibold))
@@ -31,12 +32,24 @@ struct UndoToast: View {
         .padding(.leading, 16)
         .padding(.trailing, 10)
         .padding(.vertical, 10)
-        .background(.regularMaterial, in: Capsule())
-        .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+        .toastBackground()
         .padding(.horizontal)
         .padding(.bottom, 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityAction(named: "Undo", onUndo)
+        // The message reads as one element and Undo stays a real button, for VoiceOver and UI tests alike.
+        .accessibilityElement(children: .contain)
+    }
+}
+
+private extension View {
+    /// Liquid Glass on iOS 26, a material capsule before that.
+    @ViewBuilder
+    func toastBackground() -> some View {
+        if #available(iOS 26, *) {
+            glassEffect(.regular, in: Capsule())
+        } else {
+            background(.regularMaterial, in: Capsule())
+                .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+        }
     }
 }
 

@@ -1,6 +1,14 @@
 import Foundation
+import OSLog
 import SwiftData
 import UserNotifications
+
+/// Failures that would otherwise be silent, readable in Console.app when chasing a bug report.
+enum Log {
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "ReminderGenie"
+    static let notifications = Logger(subsystem: subsystem, category: "notifications")
+    static let data = Logger(subsystem: subsystem, category: "data")
+}
 
 /// Schedules local notifications for tracked items and handles the actions on them
 /// ("Replaced it", "Snooze") so items can be updated straight from the lock screen.
@@ -35,59 +43,60 @@ final class NotificationManager: NSObject, ObservableObject {
     // MARK: Permission
 
     func refreshAuthorizationStatus() async {
-        authorizationStatus = await center.notificationSettings().authorizationStatus
+        // Only the status crosses back to the main actor; the settings object isn't Sendable.
+        authorizationStatus = await withCheckedContinuation { continuation in
+            center.getNotificationSettings { @Sendable settings in
+                continuation.resume(returning: settings.authorizationStatus)
+            }
+        }
     }
 
     func requestAuthorizationIfNeeded() async {
         await refreshAuthorizationStatus()
         guard authorizationStatus == .notDetermined else { return }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { @Sendable _, error in
+                if let error { Log.notifications.error("Couldn't request permission: \(error.localizedDescription, privacy: .public)") }
+                continuation.resume()
+            }
+        }
         await refreshAuthorizationStatus()
     }
 
     // MARK: Scheduling
 
-    /// Rebuilds pending notifications for one item.
+    /// Call after anything about an item changes. Clears its delivered reminders, since they
+    /// describe the old state, then rebuilds every pending reminder and the badge.
     func reschedule(_ item: TrackedItem) {
-        cancel(item)
-        guard !item.isPaused else { return }
+        center.removeDeliveredNotifications(withIdentifiers: identifiers(for: item.id))
+        rebuildSchedule()
+    }
 
-        let plan = ReminderPlanner.plan(
-            schedule: item.schedule,
-            hour: item.reminderHour,
-            minute: item.reminderMinute,
-            leadDays: item.leadDays,
-            remindDailyWhenOverdue: item.remindDailyWhenOverdue,
-            snoozedUntil: item.snoozedUntil,
-            now: .now
-        )
+    private func cancel(_ item: TrackedItem) {
+        let ids = identifiers(for: item.id)
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        center.removeDeliveredNotifications(withIdentifiers: ids)
+    }
 
-        for reminder in plan {
-            let content = UNMutableNotificationContent()
-            content.sound = .default
-            content.categoryIdentifier = ID.itemCategory
-            content.userInfo = [ID.itemKey: item.id.uuidString]
-            content.threadIdentifier = item.id.uuidString
+    /// Rebuilds every item's notifications and the app badge. Called whenever the app becomes active.
+    func refreshAll() {
+        rebuildSchedule()
+        Task { await refreshAuthorizationStatus() }
+    }
 
-            switch reminder.kind {
-            case .headsUp:
-                let days = item.leadDays
-                content.title = "\(item.name) is due \(days == 1 ? "tomorrow" : "in \(days) days")"
-                if item.tracksSpares && item.spareCount == 0 {
-                    content.body = "You're out of spares, so now's a good time to reorder."
-                } else if item.isLowOnSpares {
-                    content.body = "Only \(pluralized(item.spareCount, "spare")) left. Worth reordering before the due day."
-                } else {
-                    content.body = "Just a heads-up so you're ready."
-                }
-            case .due:
-                content.title = "Time to replace: \(item.name)"
-                content.body = "It's been \(pluralized(item.intervalValue, item.intervalUnit.label(for: 1))). Long-press and tap Replaced it once you're done."
-            case .overdue(let day):
-                content.title = "\(item.name) is overdue"
-                content.body = "Overdue by \(pluralized(day, "day")). Don't forget to swap it out."
-            }
+    /// Replaces all pending item reminders in one pass. Doing it for every item at once keeps the
+    /// soonest reminders within iOS's pending limit and lets each one carry the badge count for
+    /// the moment it's delivered, so the badge stays right while the app is closed.
+    private func rebuildSchedule() {
+        let items = fetchAllItems()
+        center.removePendingNotificationRequests(withIdentifiers: items.flatMap { identifiers(for: $0.id) })
 
+        let itemsByID = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for scheduled in ReminderPlanner.schedule(items.map(\.reminderInput), now: .now) {
+            guard let item = itemsByID[scheduled.itemID] else { continue }
+            let reminder = scheduled.reminder
+            let content = makeContent(for: reminder, of: item)
+            content.badge = NSNumber(value: scheduled.badge)
             let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.fireDate)
             let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
             let request = UNNotificationRequest(
@@ -95,30 +104,65 @@ final class NotificationManager: NSObject, ObservableObject {
                 content: content,
                 trigger: trigger
             )
-            center.add(request)
+            // @Sendable so the handler isn't treated as main-actor code when iOS calls it on a background queue.
+            center.add(request) { @Sendable error in
+                if let error { Log.notifications.error("Couldn't schedule a reminder: \(error.localizedDescription, privacy: .public)") }
+            }
+        }
+        updateBadge(items: items)
+    }
+
+    private func makeContent(for reminder: PlannedReminder, of item: TrackedItem) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.sound = .default
+        content.categoryIdentifier = ID.itemCategory
+        content.userInfo = [ID.itemKey: item.id.uuidString]
+        content.threadIdentifier = item.id.uuidString
+
+        switch reminder.kind {
+        case .headsUp:
+            // Counted from the fire date, since a snoozed heads-up fires later than planned.
+            let days = item.schedule.daysRemaining(at: reminder.fireDate)
+            content.title = switch days {
+            case ...0: "\(item.name) is due today"
+            case 1: "\(item.name) is due tomorrow"
+            default: "\(item.name) is due in \(days) days"
+            }
+            if item.tracksSpares && item.spareCount == 0 {
+                content.body = "You're out of spares, so now's a good time to reorder."
+            } else if item.isLowOnSpares {
+                content.body = "Only \(pluralized(item.spareCount, "spare")) left. Worth reordering before the due day."
+            } else {
+                content.body = "Just a heads-up so you're ready."
+            }
+        case .due:
+            content.title = "Time to replace: \(item.name)"
+            content.body = "It's been \(pluralized(item.intervalValue, item.intervalUnit.label(for: 1))). Long-press and tap Replaced it once you're done."
+        case .overdue(let day):
+            content.title = "\(item.name) is overdue"
+            content.body = "Overdue by \(pluralized(day, "day")). Don't forget to swap it out."
+        }
+        return content
+    }
+
+    /// Sets the badge to the number of items due today or overdue.
+    func updateBadge(items: [TrackedItem]? = nil) {
+        let all = items ?? fetchAllItems()
+        let now = Date.now
+        let count = ReminderPlanner.badgeCount(all.map(\.reminderInput), at: now)
+        center.setBadgeCount(count) { @Sendable error in
+            if let error { Log.notifications.error("Couldn't set the badge: \(error.localizedDescription, privacy: .public)") }
         }
     }
 
-    func cancel(_ item: TrackedItem) {
-        let ids = ReminderPlanner.allIdentifierSuffixes().map { identifier(item.id, $0) }
-        center.removePendingNotificationRequests(withIdentifiers: ids)
-        center.removeDeliveredNotifications(withIdentifiers: ids)
-    }
-
-    /// Rebuilds every item's notifications and the app badge. Called whenever the app becomes active.
-    func refreshAll() {
-        guard let context = container?.mainContext else { return }
-        let items = (try? context.fetch(FetchDescriptor<TrackedItem>())) ?? []
-        center.removeAllPendingNotificationRequests()
-        for item in items { reschedule(item) }
-        updateBadge(items: items)
-        Task { await refreshAuthorizationStatus() }
-    }
-
-    func updateBadge(items: [TrackedItem]? = nil) {
-        let all = items ?? ((try? container?.mainContext.fetch(FetchDescriptor<TrackedItem>())) ?? [])
-        let overdue = all.filter { !$0.isPaused && $0.schedule.daysRemaining(at: .now) < 0 }.count
-        center.setBadgeCount(overdue) { _ in }
+    private func fetchAllItems() -> [TrackedItem] {
+        guard let context = container?.mainContext else { return [] }
+        do {
+            return try context.fetch(FetchDescriptor<TrackedItem>())
+        } catch {
+            Log.data.error("Couldn't load items: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
     }
 
     func notifyLowStock(_ item: TrackedItem) {
@@ -144,10 +188,9 @@ final class NotificationManager: NSObject, ObservableObject {
         let previousSnoozedUntil = item.snoozedUntil
         let previousSpareCount = item.spareCount
         let log = item.markReplaced(on: date, note: note)
-        try? item.modelContext?.save()
+        save(item.modelContext)
         reschedule(item)
         notifyLowStock(item)
-        updateBadge()
         return ReplacementUndo(
             item: item,
             log: log,
@@ -171,40 +214,37 @@ final class NotificationManager: NSObject, ObservableObject {
             item.logs?.removeAll { $0.persistentModelID == log.persistentModelID }
             item.modelContext?.delete(log)
         }
-        try? item.modelContext?.save()
+        save(item.modelContext)
         let lowStockID = identifier(item.id, "low-stock")
         center.removePendingNotificationRequests(withIdentifiers: [lowStockID])
         center.removeDeliveredNotifications(withIdentifiers: [lowStockID])
         reschedule(item)
-        updateBadge()
+    }
+
+    /// Removes a history entry, rewinding the countdown if it was the latest (see `TrackedItem.removeLog`).
+    func deleteLog(_ log: ReplacementLog, from item: TrackedItem) {
+        item.removeLog(log)
+        save(item.modelContext)
+        reschedule(item)
     }
 
     func snooze(_ item: TrackedItem, for interval: TimeInterval) {
         item.snoozedUntil = Date.now.addingTimeInterval(interval)
-        try? item.modelContext?.save()
+        save(item.modelContext)
         reschedule(item)
     }
 
     func setPaused(_ item: TrackedItem, _ paused: Bool) {
         item.isPaused = paused
         if paused { item.snoozedUntil = nil }
-        try? item.modelContext?.save()
+        save(item.modelContext)
         reschedule(item)
-        updateBadge()
     }
 
     /// The next notification that will fire for an item, for display in the detail screen.
     func nextReminderDate(for item: TrackedItem, now: Date = .now) -> Date? {
         guard !item.isPaused else { return nil }
-        return ReminderPlanner.plan(
-            schedule: item.schedule,
-            hour: item.reminderHour,
-            minute: item.reminderMinute,
-            leadDays: item.leadDays,
-            remindDailyWhenOverdue: item.remindDailyWhenOverdue,
-            snoozedUntil: item.snoozedUntil,
-            now: now
-        ).map(\.fireDate).min()
+        return ReminderPlanner.plan(item.reminderInput, now: now).map(\.fireDate).min()
     }
 
     /// Sends a sample reminder a few seconds from now so people can check sounds and banners.
@@ -215,20 +255,37 @@ final class NotificationManager: NSObject, ObservableObject {
         content.body = "This is what a reminder looks like. Long-press real ones to log a replacement or snooze."
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-        try? await center.add(UNNotificationRequest(identifier: "test-notification", content: content, trigger: trigger))
+        center.add(UNNotificationRequest(identifier: "test-notification", content: content, trigger: trigger)) { @Sendable error in
+            if let error { Log.notifications.error("Couldn't send the test notification: \(error.localizedDescription, privacy: .public)") }
+        }
     }
 
     func delete(_ item: TrackedItem) {
         cancel(item)
         item.modelContext?.delete(item)
-        try? container?.mainContext.save()
-        updateBadge()
+        save(container?.mainContext)
+        // Other items' pending reminders carry badge counts that included this one.
+        rebuildSchedule()
     }
 
     // MARK: Private
 
+    private func save(_ context: ModelContext?) {
+        guard let context, context.hasChanges else { return }
+        do {
+            try context.save()
+        } catch {
+            Log.data.error("Couldn't save: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
     private func identifier(_ id: UUID, _ suffix: String) -> String {
         "\(id.uuidString)-\(suffix)"
+    }
+
+    /// Every reminder id an item can have, so they can all be cleared at once.
+    private func identifiers(for id: UUID) -> [String] {
+        ReminderPlanner.allIdentifierSuffixes().map { identifier(id, $0) }
     }
 
     private func registerCategories() {
@@ -276,23 +333,27 @@ struct ReplacementUndo: Identifiable {
     let previousSpareCount: Int
 }
 
-extension NotificationManager: UNUserNotificationCenterDelegate {
-    nonisolated func userNotificationCenter(
+// iOS calls these on the main thread and expects the completion handler there too. These used to be
+// nonisolated async methods, which in Swift 6 finish (and call the handler) on a background thread,
+// crashing the app when "Replaced it" was tapped. Synchronous main-actor methods keep it all on main.
+extension NotificationManager: @preconcurrency UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound, .badge])
     }
 
-    nonisolated func userNotificationCenter(
+    func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        let action = response.actionIdentifier
-        guard let raw = response.notification.request.content.userInfo[ID.itemKey] as? String,
-              let id = UUID(uuidString: raw) else { return }
-        await MainActor.run {
-            NotificationManager.shared.handle(action: action, itemID: id)
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if let raw = response.notification.request.content.userInfo[ID.itemKey] as? String,
+           let id = UUID(uuidString: raw) {
+            handle(action: response.actionIdentifier, itemID: id)
         }
+        completionHandler()
     }
 }

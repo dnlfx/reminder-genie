@@ -14,11 +14,19 @@
 			remoteGlobalIDString = 99E3A65F4F675A4C8FFE1D70;
 			remoteInfo = ReminderGenie;
 		};
+		38372FF8E8350E08E7A7F302 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1781F676DEDF5767F3243DB0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 99E3A65F4F675A4C8FFE1D70;
+			remoteInfo = ReminderGenie;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		8E42256A89ABABDDA8DEA8F9 /* ReminderGenie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReminderGenie.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		789695E3F2B97A651F49D58C /* ReminderGenieTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReminderGenieTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEC31268B39AD8A6AEECAFFB /* ReminderGenieUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReminderGenieUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,9 +40,21 @@
 			path = ReminderGenieTests;
 			sourceTree = "<group>";
 		};
+		5C6C2A492D11C57E2470E31F /* ReminderGenieUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ReminderGenieUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		320E4162CEA4CE4D5FEDD14C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		76535B6EEC56A51C79557182 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -57,6 +77,7 @@
 			children = (
 				60D86AF7F62818E455EC2D46 /* ReminderGenie */,
 				864BB2D2707E9DFAC4111545 /* ReminderGenieTests */,
+				5C6C2A492D11C57E2470E31F /* ReminderGenieUITests */,
 				D71BD8A0B6A6AA54EDBA6454 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,6 +87,7 @@
 			children = (
 				8E42256A89ABABDDA8DEA8F9 /* ReminderGenie.app */,
 				789695E3F2B97A651F49D58C /* ReminderGenieTests.xctest */,
+				BEC31268B39AD8A6AEECAFFB /* ReminderGenieUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +140,29 @@
 			productReference = 789695E3F2B97A651F49D58C /* ReminderGenieTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		F3039E3C8B8FA54F10E1F255 /* ReminderGenieUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 152B5E22FB087CDF46E00166 /* Build configuration list for PBXNativeTarget "ReminderGenieUITests" */;
+			buildPhases = (
+				72B4714F7640AB3B487875D5 /* Sources */,
+				320E4162CEA4CE4D5FEDD14C /* Frameworks */,
+				104FF2E9E60BE3E9220E0B64 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CA6509CFB7CC8BBED77512D8 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5C6C2A492D11C57E2470E31F /* ReminderGenieUITests */,
+			);
+			name = ReminderGenieUITests;
+			packageProductDependencies = (
+			);
+			productName = ReminderGenieUITests;
+			productReference = BEC31268B39AD8A6AEECAFFB /* ReminderGenieUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -133,6 +178,10 @@
 					};
 					A5649AF0A3F95056C707E3B6 = {
 						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 99E3A65F4F675A4C8FFE1D70;
+					};
+					F3039E3C8B8FA54F10E1F255 = {
+						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 99E3A65F4F675A4C8FFE1D70;
 					};
 				};
@@ -153,11 +202,19 @@
 			targets = (
 				99E3A65F4F675A4C8FFE1D70 /* ReminderGenie */,
 				A5649AF0A3F95056C707E3B6 /* ReminderGenieTests */,
+				F3039E3C8B8FA54F10E1F255 /* ReminderGenieUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		104FF2E9E60BE3E9220E0B64 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7B3FC2D3640485997EC5329C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -175,6 +232,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		72B4714F7640AB3B487875D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0F53FC2AFDA3376014A0A9B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -192,6 +256,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		CA6509CFB7CC8BBED77512D8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 99E3A65F4F675A4C8FFE1D70 /* ReminderGenie */;
+			targetProxy = 38372FF8E8350E08E7A7F302 /* PBXContainerItemProxy */;
+		};
 		6FA9671EBEFE256E7AD3EB87 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 99E3A65F4F675A4C8FFE1D70 /* ReminderGenie */;
@@ -200,6 +269,38 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		8EB09F7859651DED06D29DE7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenieUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ReminderGenie;
+			};
+			name = Debug;
+		};
+		A52A1A9A88236E9E71909D51 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenieUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ReminderGenie;
+			};
+			name = Release;
+		};
 		7B2EDCE72AD696F18C8E0E01 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -327,6 +428,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Reminder Genie";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -341,7 +443,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenie;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -356,6 +458,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Reminder Genie";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -370,7 +473,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenie;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -386,7 +489,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReminderGenie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReminderGenie";
 			};
@@ -403,7 +506,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dnlfx.ReminderGenieTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReminderGenie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReminderGenie";
 			};
@@ -412,6 +515,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		152B5E22FB087CDF46E00166 /* Build configuration list for PBXNativeTarget "ReminderGenieUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8EB09F7859651DED06D29DE7 /* Debug */,
+				A52A1A9A88236E9E71909D51 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		458B4083FB4863EBA58A3DBE /* Build configuration list for PBXProject "ReminderGenie" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

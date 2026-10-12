@@ -118,6 +118,7 @@ struct ItemDetailView: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilitySummary(days: days))
+            .accessibilityIdentifier("countdown")
 
             VStack(spacing: 6) {
                 Text("Due \(item.dueDate.formatted(date: .complete, time: .omitted))")
@@ -226,6 +227,7 @@ struct ItemDetailView: View {
 
 private struct HistorySection: View {
     let item: TrackedItem
+    @EnvironmentObject private var notifications: NotificationManager
 
     var body: some View {
         let logs = item.sortedLogs
@@ -264,11 +266,12 @@ private struct HistorySection: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                // One element per entry (date, note, gap), which VoiceOver reads in one go and the UI tests can find.
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("history-entry")
                 .swipeActions {
                     Button("Delete", role: .destructive) {
-                        item.logs?.removeAll { $0.persistentModelID == log.persistentModelID }
-                        item.modelContext?.delete(log)
-                        try? item.modelContext?.save()
+                        withAnimation { notifications.deleteLog(log, from: item) }
                     }
                 }
             }
@@ -276,7 +279,7 @@ private struct HistorySection: View {
             Text("History")
         } footer: {
             if !logs.isEmpty {
-                Text("Swipe an entry to delete it. To log one you forgot, tap Mark as Replaced and change the date.")
+                Text("Swipe an entry to delete it. Deleting the latest one rewinds the countdown to the one before. To log one you forgot, tap Mark as Replaced and change the date.")
             }
         }
     }

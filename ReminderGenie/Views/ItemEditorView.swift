@@ -187,7 +187,6 @@ struct ItemEditorView: View {
         Task {
             await notifications.requestAuthorizationIfNeeded()
             notifications.reschedule(item)
-            notifications.updateBadge()
         }
 
         if let onFinish {

@@ -68,6 +68,32 @@ struct ScheduleTests {
         #expect(plan == [PlannedReminder(kind: .due, fireDate: snooze)])
     }
 
+    @Test func snoozingBeforeTheDueDayKeepsTheDueReminder() {
+        // "Remind me tomorrow" on a heads-up two days early shouldn't move the due reminder up.
+        let s = schedule(start: date(2026, 10, 1), 14, .days)
+        let snooze = date(2026, 10, 14, 9)
+        let plan = ReminderPlanner.plan(schedule: s, hour: 9, minute: 0, leadDays: 2, remindDailyWhenOverdue: false, snoozedUntil: snooze, now: date(2026, 10, 13, 9, 5))
+        #expect(plan == [
+            PlannedReminder(kind: .headsUp, fireDate: snooze),
+            PlannedReminder(kind: .due, fireDate: date(2026, 10, 15, 9)),
+        ])
+    }
+
+    @Test func followUpsCountFromAnExpiredSnooze() {
+        let s = schedule(start: date(2026, 10, 1), 14, .days)
+        let snooze = date(2026, 10, 16, 9)
+        let plan = ReminderPlanner.plan(schedule: s, hour: 9, minute: 0, leadDays: 2, remindDailyWhenOverdue: true, snoozedUntil: snooze, now: date(2026, 10, 17, 12))
+        #expect(plan.map(\.identifierSuffix) == ["nag-2", "nag-3"])
+        #expect(plan.first?.fireDate == date(2026, 10, 18, 9))
+    }
+
+    @Test func needsReplacingFromTheDueDay() {
+        let s = schedule(start: date(2026, 10, 1), 14, .days)
+        #expect(!s.needsReplacing(at: date(2026, 10, 14, 23)))
+        #expect(s.needsReplacing(at: date(2026, 10, 15, 0, 1)))
+        #expect(s.needsReplacing(at: date(2026, 10, 20)))
+    }
+
     @Test func averageDaysBetweenReplacements() {
         let dates = [date(2026, 9, 1), date(2026, 9, 15), date(2026, 10, 1)]
         #expect(HistoryStats.averageDaysBetween(dates, calendar: calendar) == 15)

@@ -70,6 +70,31 @@ final class TrackedItem {
     /// The reorder link as a URL, adding https:// when the user typed a bare domain.
     var reorderURL: URL? { ReorderLink.url(from: reorderLink) }
 
+    var reminderInput: ReminderInput {
+        ReminderInput(
+            id: id,
+            schedule: schedule,
+            hour: reminderHour,
+            minute: reminderMinute,
+            leadDays: leadDays,
+            remindDailyWhenOverdue: remindDailyWhenOverdue,
+            snoozedUntil: snoozedUntil,
+            isPaused: isPaused
+        )
+    }
+
+    /// Removes a history entry. Removing the entry that started the current cycle rewinds the
+    /// countdown to the entry before it, so a mistaken log can be taken back after Undo has gone.
+    func removeLog(_ log: ReplacementLog) {
+        let remaining = sortedLogs.filter { $0.persistentModelID != log.persistentModelID }
+        if log.date == startDate, let previous = remaining.first {
+            startDate = previous.date
+            snoozedUntil = nil
+        }
+        logs?.removeAll { $0.persistentModelID == log.persistentModelID }
+        modelContext?.delete(log)
+    }
+
     /// Records a replacement: starts a new cycle, logs it, clears any snooze and uses up a spare.
     @discardableResult
     func markReplaced(on date: Date = .now, note: String = "") -> ReplacementLog {

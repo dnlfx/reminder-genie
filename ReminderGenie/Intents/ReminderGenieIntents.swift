@@ -40,16 +40,19 @@ struct ItemQuery: EntityStringQuery {
 
     @MainActor
     private func allItems() -> [TrackedItem] {
-        (try? AppModelContainer.shared.mainContext.fetch(FetchDescriptor<TrackedItem>())) ?? []
+        guard AppModelContainer.loadErrorMessage == nil else { return [] }
+        return (try? AppModelContainer.shared.mainContext.fetch(FetchDescriptor<TrackedItem>())) ?? []
     }
 }
 
 enum ReminderGenieIntentError: Error, CustomLocalizedStringResourceConvertible {
     case itemNotFound
+    case storeUnavailable
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .itemNotFound: "That item isn't in Reminder Genie anymore."
+        case .storeUnavailable: "Reminder Genie couldn't open your items. Open the app for details."
         }
     }
 }
@@ -74,6 +77,7 @@ struct MarkReplacedIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard AppModelContainer.loadErrorMessage == nil else { throw ReminderGenieIntentError.storeUnavailable }
         let manager = NotificationManager.shared
         manager.configure(container: AppModelContainer.shared)
         guard let tracked = manager.item(withID: item.id) else {
@@ -98,6 +102,7 @@ struct NextDueIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard AppModelContainer.loadErrorMessage == nil else { throw ReminderGenieIntentError.storeUnavailable }
         let items = ((try? AppModelContainer.shared.mainContext.fetch(FetchDescriptor<TrackedItem>())) ?? [])
             .filter { !$0.isPaused }
             .sorted { $0.dueDate < $1.dueDate }

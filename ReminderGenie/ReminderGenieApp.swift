@@ -4,13 +4,25 @@ import SwiftUI
 @main
 struct ReminderGenieApp: App {
     init() {
-        NotificationManager.shared.configure(container: AppModelContainer.shared)
+        // Without the real database, leave the reminders and badge already scheduled alone.
+        if AppModelContainer.loadErrorMessage == nil {
+            NotificationManager.shared.configure(container: AppModelContainer.shared)
+        }
+        #if DEBUG
+        if UITestSupport.isActive {
+            UITestSupport.prepare(container: AppModelContainer.shared)
+        }
+        #endif
     }
 
     var body: some Scene {
         WindowGroup {
-            ItemListView()
-                .environmentObject(NotificationManager.shared)
+            if let message = AppModelContainer.loadErrorMessage {
+                StoreErrorView(message: message)
+            } else {
+                ItemListView()
+                    .environmentObject(NotificationManager.shared)
+            }
         }
         .modelContainer(AppModelContainer.shared)
     }
@@ -18,11 +30,34 @@ struct ReminderGenieApp: App {
 
 /// The one SwiftData container, shared by the UI, notification actions and App Intents (Siri, Shortcuts).
 enum AppModelContainer {
-    static let shared: ModelContainer = {
+    static var shared: ModelContainer { loaded.container }
+
+    /// Set when the database couldn't be opened. The app then shows `StoreErrorView` on an empty
+    /// in-memory store rather than crashing on every launch, and leaves the file on disk untouched.
+    static var loadErrorMessage: String? { loaded.errorMessage }
+
+    private static let loaded: (container: ModelContainer, errorMessage: String?) = {
+        let schema = Schema(versionedSchema: ReminderGenieSchemaV1.self)
+        var inMemory = false
+        #if DEBUG
+        // UI tests start from a clean slate every launch and never touch real data.
+        inMemory = UITestSupport.isActive
+        #endif
         do {
-            return try ModelContainer(for: TrackedItem.self, ReplacementLog.self)
+            let container = try ModelContainer(
+                for: schema,
+                migrationPlan: ReminderGenieMigrationPlan.self,
+                configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
+            )
+            return (container, nil)
         } catch {
-            fatalError("Could not open the Reminder Genie database: \(error)")
+            Log.data.fault("Couldn't open the database: \(String(describing: error), privacy: .public)")
+            let memory = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                return (try ModelContainer(for: schema, configurations: memory), error.localizedDescription)
+            } catch {
+                fatalError("Could not create even an in-memory database: \(error)")
+            }
         }
     }()
 }
