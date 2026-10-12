@@ -357,23 +357,27 @@ struct ReplacementUndo: Identifiable {
     let previousSpareCount: Int
 }
 
-extension NotificationManager: UNUserNotificationCenterDelegate {
-    nonisolated func userNotificationCenter(
+// iOS calls these on the main thread and expects the completion handler there too. These used to be
+// nonisolated async methods, which in Swift 6 finish (and call the handler) on a background thread,
+// crashing the app when "Replaced it" was tapped. Synchronous main-actor methods keep it all on main.
+extension NotificationManager: @preconcurrency UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound, .badge]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound, .badge])
     }
 
-    nonisolated func userNotificationCenter(
+    func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        let action = response.actionIdentifier
-        guard let raw = response.notification.request.content.userInfo[ID.itemKey] as? String,
-              let id = UUID(uuidString: raw) else { return }
-        await MainActor.run {
-            NotificationManager.shared.handle(action: action, itemID: id)
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if let raw = response.notification.request.content.userInfo[ID.itemKey] as? String,
+           let id = UUID(uuidString: raw) {
+            handle(action: response.actionIdentifier, itemID: id)
         }
+        completionHandler()
     }
 }
