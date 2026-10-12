@@ -78,4 +78,38 @@ struct ScheduleTests {
         #expect(IntervalUnit.days.label(for: 1) == "day")
         #expect(IntervalUnit.months.label(for: 3) == "months")
     }
+
+    @Test func gapsCompareEachCycleWithItsSchedule() {
+        let dates = [date(2026, 9, 1), date(2026, 9, 15), date(2026, 10, 3)]
+        let gaps = HistoryStats.gaps(dates, intervalValue: 2, intervalUnit: .weeks, calendar: calendar)
+        #expect(gaps.map(\.days) == [14, 18])
+        #expect(gaps.map(\.targetDays) == [14, 14])
+        #expect(gaps.map(\.isOnTime) == [true, false])
+        #expect(HistoryStats.onTimeRate(gaps) == 0.5)
+        #expect(HistoryStats.onTimeRate([]) == nil)
+    }
+
+    @Test func monthlyGapTargetFollowsTheCalendar() {
+        let gaps = HistoryStats.gaps([date(2026, 2, 1), date(2026, 3, 1)], intervalValue: 1, intervalUnit: .months, calendar: calendar)
+        #expect(gaps == [HistoryStats.Gap(replacedOn: date(2026, 3, 1), days: 28, targetDays: 28)])
+    }
+
+    @Test func intervalRangesDependOnUnit() {
+        #expect(IntervalUnit.days.allowedRange == 1...365)
+        #expect(IntervalUnit.years.allowedRange.upperBound == 10)
+    }
+
+    @Test func pluralization() {
+        #expect(pluralized(1, "day") == "1 day")
+        #expect(pluralized(3, "day") == "3 days")
+        #expect(pluralized(0, "spare") == "0 spares")
+    }
+
+    @Test func reorderLinks() {
+        #expect(ReorderLink.url(from: "amazon.com/lenses")?.absoluteString == "https://amazon.com/lenses")
+        #expect(ReorderLink.url(from: " https://example.com ")?.host() == "example.com")
+        #expect(ReorderLink.url(from: "") == nil)
+        #expect(ReorderLink.url(from: "not a link") == nil)
+        #expect(ReorderLink.url(from: "ftp://example.com") == nil)
+    }
 }

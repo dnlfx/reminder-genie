@@ -3,15 +3,8 @@ import SwiftUI
 
 @main
 struct ReminderGenieApp: App {
-    let container: ModelContainer
-
     init() {
-        do {
-            container = try ModelContainer(for: TrackedItem.self, ReplacementLog.self)
-        } catch {
-            fatalError("Could not open the Reminder Genie database: \(error)")
-        }
-        NotificationManager.shared.configure(container: container)
+        NotificationManager.shared.configure(container: AppModelContainer.shared)
     }
 
     var body: some Scene {
@@ -19,8 +12,19 @@ struct ReminderGenieApp: App {
             ItemListView()
                 .environmentObject(NotificationManager.shared)
         }
-        .modelContainer(container)
+        .modelContainer(AppModelContainer.shared)
     }
+}
+
+/// The one SwiftData container, shared by the UI, notification actions and App Intents (Siri, Shortcuts).
+enum AppModelContainer {
+    static let shared: ModelContainer = {
+        do {
+            return try ModelContainer(for: TrackedItem.self, ReplacementLog.self)
+        } catch {
+            fatalError("Could not open the Reminder Genie database: \(error)")
+        }
+    }()
 }
 
 enum AppSettings {

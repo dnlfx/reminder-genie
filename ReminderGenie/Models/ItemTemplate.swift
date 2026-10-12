@@ -57,11 +57,45 @@ struct ItemTemplate: Identifiable, Hashable {
         all.filter { $0.category == category }
     }
 
+    struct Symbol: Hashable {
+        var name: String
+        /// What VoiceOver reads for the icon.
+        var label: String
+    }
+
     /// Icons offered in the editor's icon picker.
-    static let symbolChoices: [String] = [
-        "eye", "eye.circle", "mouth", "bolt", "scissors", "paintbrush", "pills", "cross.case",
-        "figure.run", "wind", "battery.100", "bed.double", "leaf", "drop", "refrigerator",
-        "sparkles", "car", "car.rear.waves.up", "waterbottle", "flame", "house", "tshirt",
-        "pawprint", "heart", "lightbulb", "trash", "calendar", "clock",
+    static let symbols: [Symbol] = [
+        Symbol(name: "eye", label: "Eye"),
+        Symbol(name: "eye.circle", label: "Eye in circle"),
+        Symbol(name: "mouth", label: "Mouth"),
+        Symbol(name: "bolt", label: "Bolt"),
+        Symbol(name: "scissors", label: "Scissors"),
+        Symbol(name: "paintbrush", label: "Paintbrush"),
+        Symbol(name: "pills", label: "Pills"),
+        Symbol(name: "cross.case", label: "First aid kit"),
+        Symbol(name: "figure.run", label: "Runner"),
+        Symbol(name: "wind", label: "Air"),
+        Symbol(name: "battery.100", label: "Battery"),
+        Symbol(name: "bed.double", label: "Bed"),
+        Symbol(name: "leaf", label: "Leaf"),
+        Symbol(name: "drop", label: "Water drop"),
+        Symbol(name: "refrigerator", label: "Fridge"),
+        Symbol(name: "sparkles", label: "Sparkles"),
+        Symbol(name: "car", label: "Car"),
+        Symbol(name: "car.rear.waves.up", label: "Car wipers"),
+        Symbol(name: "waterbottle", label: "Water bottle"),
+        Symbol(name: "flame", label: "Flame"),
+        Symbol(name: "house", label: "House"),
+        Symbol(name: "tshirt", label: "T-shirt"),
+        Symbol(name: "pawprint", label: "Pet"),
+        Symbol(name: "heart", label: "Heart"),
+        Symbol(name: "lightbulb", label: "Light bulb"),
+        Symbol(name: "trash", label: "Trash"),
+        Symbol(name: "calendar", label: "Calendar"),
+        Symbol(name: "clock", label: "Clock"),
     ]
+
+    /// A few common picks shown on the empty list to get started quickly.
+    static let starters: [ItemTemplate] = ["Contact lenses (2-week)", "Toothbrush", "HVAC / furnace filter", "Water pitcher filter"]
+        .compactMap { name in all.first { $0.name == name } }
 }

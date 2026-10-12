@@ -14,7 +14,20 @@ struct AddItemFlow: View {
                     NavigationLink {
                         ItemEditorView(mode: .create(blankDraft), onFinish: { dismiss() })
                     } label: {
-                        Label("Custom item", systemImage: "square.and.pencil")
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.tint)
+                                .frame(width: 34, height: 34)
+                                .background(Color.accentColor.opacity(0.15), in: Circle())
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(trimmedSearch.isEmpty ? "Custom Item" : "Create “\(trimmedSearch)”")
+                                Text("Set your own name, schedule and icon")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
                 ForEach(ItemTemplate.Category.allCases) { category in
@@ -35,8 +48,8 @@ struct AddItemFlow: View {
                     }
                 }
             }
-            .searchable(text: $search, prompt: "Search templates")
-            .navigationTitle("Add item")
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search or name a new item")
+            .navigationTitle("Add Item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -46,15 +59,34 @@ struct AddItemFlow: View {
         }
     }
 
+    private var trimmedSearch: String {
+        search.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var blankDraft: ItemDraft {
         var draft = ItemDraft()
+        draft.name = trimmedSearch
         draft.reminderTime = ItemDraft.time(hour: defaultHour, minute: defaultMinute)
         return draft
     }
 
     private func filtered(_ templates: [ItemTemplate]) -> [ItemTemplate] {
-        guard !search.isEmpty else { return templates }
-        return templates.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        guard !trimmedSearch.isEmpty else { return templates }
+        return templates.filter { $0.name.localizedCaseInsensitiveContains(trimmedSearch) }
+    }
+}
+
+/// A template's icon in a tinted circle.
+struct TemplateIcon: View {
+    let template: ItemTemplate
+
+    var body: some View {
+        Image(systemName: template.symbolName)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(template.color.color)
+            .frame(width: 34, height: 34)
+            .background(template.color.color.opacity(0.15), in: Circle())
+            .accessibilityHidden(true)
     }
 }
 
@@ -63,12 +95,8 @@ private struct TemplateRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: template.symbolName)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(template.color.color)
-                .frame(width: 32, height: 32)
-                .background(template.color.color.opacity(0.15), in: Circle())
-            VStack(alignment: .leading) {
+            TemplateIcon(template: template)
+            VStack(alignment: .leading, spacing: 1) {
                 Text(template.name)
                 Text(template.intervalDescription)
                     .font(.caption)

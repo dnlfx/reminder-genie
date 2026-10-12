@@ -25,6 +25,21 @@ enum IntervalUnit: String, Codable, CaseIterable, Identifiable, Sendable {
         }
         return value == 1 ? singular : singular + "s"
     }
+
+    /// Sensible bounds for the editor's stepper, so nobody ends up with "every 365 years".
+    var allowedRange: ClosedRange<Int> {
+        switch self {
+        case .days: 1...365
+        case .weeks: 1...52
+        case .months: 1...24
+        case .years: 1...10
+        }
+    }
+}
+
+/// "1 day", "3 days". Keeps pluralization in one place.
+func pluralized(_ count: Int, _ singular: String, _ plural: String? = nil) -> String {
+    "\(count) \(count == 1 ? singular : (plural ?? singular + "s"))"
 }
 
 /// Where an item sits relative to its due date.
@@ -146,6 +161,36 @@ enum ReminderPlanner {
 
 /// Stats derived from an item's replacement history.
 enum HistoryStats {
+    /// The time between two consecutive replacements, compared with the item's schedule.
+    struct Gap: Equatable, Sendable {
+        /// When the later replacement happened.
+        var replacedOn: Date
+        var days: Int
+        /// How many days the schedule allowed for that cycle.
+        var targetDays: Int
+
+        var isOnTime: Bool { days <= targetDays }
+    }
+
+    /// Gaps between consecutive replacements, oldest first.
+    static func gaps(_ dates: [Date], intervalValue: Int, intervalUnit: IntervalUnit, calendar: Calendar = .current) -> [Gap] {
+        let sorted = dates.sorted()
+        guard sorted.count >= 2 else { return [] }
+        return zip(sorted, sorted.dropFirst()).map { previous, next in
+            let start = calendar.startOfDay(for: previous)
+            let due = Schedule(startDate: start, intervalValue: intervalValue, intervalUnit: intervalUnit, calendar: calendar).dueDate
+            let target = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: due)).day ?? 0
+            let days = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: next)).day ?? 0
+            return Gap(replacedOn: next, days: days, targetDays: target)
+        }
+    }
+
+    /// Share of cycles replaced on or before the due day, or nil with no complete cycles.
+    static func onTimeRate(_ gaps: [Gap]) -> Double? {
+        guard !gaps.isEmpty else { return nil }
+        return Double(gaps.filter(\.isOnTime).count) / Double(gaps.count)
+    }
+
     /// Average number of days between consecutive replacements, or nil with fewer than two entries.
     static func averageDaysBetween(_ dates: [Date], calendar: Calendar = .current) -> Double? {
         let sorted = dates.sorted()

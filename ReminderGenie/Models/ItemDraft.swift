@@ -15,15 +15,23 @@ struct ItemDraft: Equatable {
     var tracksSpares: Bool = false
     var spareCount: Int = 0
     var lowStockThreshold: Int = 1
+    var reorderLink: String = ""
     var isPaused: Bool = false
 
     var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && intervalValue > 0
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && intervalValue > 0 && isReorderLinkValid
     }
 
-    var previewDueDate: Date {
-        Schedule(startDate: startDate, intervalValue: intervalValue, intervalUnit: intervalUnit).dueDate
+    /// An empty link is fine; anything typed must look like a web address.
+    var isReorderLinkValid: Bool {
+        reorderLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || ReorderLink.url(from: reorderLink) != nil
     }
+
+    var previewSchedule: Schedule {
+        Schedule(startDate: startDate, intervalValue: intervalValue, intervalUnit: intervalUnit)
+    }
+
+    var previewDueDate: Date { previewSchedule.dueDate }
 
     var reminderHourMinute: (hour: Int, minute: Int) {
         let parts = Calendar.current.dateComponents([.hour, .minute], from: reminderTime)
@@ -63,6 +71,7 @@ extension ItemDraft {
         tracksSpares = item.tracksSpares
         spareCount = item.spareCount
         lowStockThreshold = item.lowStockThreshold
+        reorderLink = item.reorderLink
         isPaused = item.isPaused
     }
 
@@ -86,6 +95,7 @@ extension ItemDraft {
         item.tracksSpares = tracksSpares
         item.spareCount = spareCount
         item.lowStockThreshold = lowStockThreshold
+        item.reorderLink = reorderLink.trimmingCharacters(in: .whitespacesAndNewlines)
         item.isPaused = isPaused
     }
 }
