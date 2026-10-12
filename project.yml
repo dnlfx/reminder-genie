@@ -39,11 +39,26 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dnlfx.ReminderGenieTests
         GENERATE_INFOPLIST_FILE: YES
+  ReminderGenieUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [ReminderGenieUITests]
+    dependencies:
+      - target: ReminderGenie
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dnlfx.ReminderGenieUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: ReminderGenie
 schemes:
   ReminderGenie:
     build:
       targets:
         ReminderGenie: all
         ReminderGenieTests: [test]
+        ReminderGenieUITests: [test]
     test:
-      targets: [ReminderGenieTests]
+      targets:
+        - ReminderGenieTests
+        - name: ReminderGenieUITests
+          parallelizable: false

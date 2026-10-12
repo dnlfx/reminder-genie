@@ -22,6 +22,7 @@ struct UndoToast: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+            .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
             Button("Undo", action: onUndo)
                 .font(.subheadline.weight(.semibold))
@@ -34,8 +35,8 @@ struct UndoToast: View {
         .toastBackground()
         .padding(.horizontal)
         .padding(.bottom, 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityAction(named: "Undo", onUndo)
+        // The message reads as one element and Undo stays a real button, for VoiceOver and UI tests alike.
+        .accessibilityElement(children: .contain)
     }
 }
 

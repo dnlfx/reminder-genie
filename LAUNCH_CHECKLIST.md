@@ -7,12 +7,8 @@ What's left between this repo and an App Store release, in the order it needs do
 - [ ] Open the project in Xcode 26. If it offers **Update to recommended settings**, accept it, then build. The code hasn't been compiled since the go-live fixes, because they were made without Xcode.
 - [ ] The project is now in Swift 6 language mode. Fix anything the compiler flags; the concurrency changes were made by reading the code, not compiling it.
 - [ ] Run the tests (⌘U). `ScheduleTests` covers the date math and reminder plan, including the snooze rules.
-- [ ] Smoke test on a real iPhone:
-  - Add an item with a 1-day interval, last replaced yesterday, reminder a couple of minutes out. Lock the phone. The reminder should arrive and the badge should read 1.
-  - Long-press the reminder and tap **Replaced it**. The badge should clear without opening the app.
-  - Add an item due in a few days with a heads-up today, tap **Remind me tomorrow** on the heads-up, and check the detail screen still shows the due-day reminder.
-  - Swipe away the newest history entry on an item and confirm the countdown goes back to the previous one.
-  - Try Siri: "What's due in Reminder Genie".
+- [ ] Plug in your iPhone, pick it as the run destination and press ⌘U. The UI tests run the whole smoke test on the device (adding an item, swipe to replace and Undo, Snooze rules, history rewind, and a real reminder handled with **Replaced it**). The first run on a device asks you to pick a signing Team for the `ReminderGenieUITests` target too.
+- [ ] Things the tests can't cover, worth a quick look by hand: the badge count on the Home Screen, and Siri ("What's due in Reminder Genie").
 
 ## App icon for iOS 26
 

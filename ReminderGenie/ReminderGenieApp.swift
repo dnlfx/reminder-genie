@@ -8,6 +8,11 @@ struct ReminderGenieApp: App {
         if AppModelContainer.loadErrorMessage == nil {
             NotificationManager.shared.configure(container: AppModelContainer.shared)
         }
+        #if DEBUG
+        if UITestSupport.isActive {
+            UITestSupport.prepare(container: AppModelContainer.shared)
+        }
+        #endif
     }
 
     var body: some Scene {
@@ -33,11 +38,16 @@ enum AppModelContainer {
 
     private static let loaded: (container: ModelContainer, errorMessage: String?) = {
         let schema = Schema(versionedSchema: ReminderGenieSchemaV1.self)
+        var inMemory = false
+        #if DEBUG
+        // UI tests start from a clean slate every launch and never touch real data.
+        inMemory = UITestSupport.isActive
+        #endif
         do {
             let container = try ModelContainer(
                 for: schema,
                 migrationPlan: ReminderGenieMigrationPlan.self,
-                configurations: ModelConfiguration(schema: schema)
+                configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
             )
             return (container, nil)
         } catch {

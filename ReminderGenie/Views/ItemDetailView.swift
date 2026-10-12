@@ -118,6 +118,7 @@ struct ItemDetailView: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilitySummary(days: days))
+            .accessibilityIdentifier("countdown")
 
             VStack(spacing: 6) {
                 Text("Due \(item.dueDate.formatted(date: .complete, time: .omitted))")
@@ -265,6 +266,7 @@ private struct HistorySection: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .accessibilityIdentifier("history-entry")
                 .swipeActions {
                     Button("Delete", role: .destructive) {
                         withAnimation { notifications.deleteLog(log, from: item) }

@@ -33,7 +33,12 @@ Tell it when you started the current one and how often it needs replacing. It sh
 
 To try a reminder quickly, add a custom item with a 1-day interval, set "Last replaced" to yesterday and the reminder time a couple of minutes from now, then lock the device or background the app.
 
-Run the unit tests with **Product › Test** (⌘U). They cover the date math and the reminder plan.
+Run the tests with **Product › Test** (⌘U), on a simulator or your connected iPhone:
+
+- `ReminderGenieTests` (unit tests) cover the date math and the reminder plan.
+- `ReminderGenieUITests` drive the real app: add an item from a template, swipe to replace and undo, check Snooze only appears once an item is nearly due, rewind the countdown by deleting a history entry, and wait for a real reminder notification then tap **Replaced it** on it. The notification test waits up to two minutes for the reminder to arrive.
+
+The UI tests launch the app with `-ui-testing`, which swaps in an empty in-memory database with sample data (`Services/UITestSupport.swift`, debug builds only), so they never touch your real items. To run only the unit tests, use the diamond next to `ScheduleTests` or ⌃⌥⌘U on that file.
 
 If you prefer [XcodeGen](https://github.com/yonaskolb/XcodeGen), `project.yml` regenerates an equivalent project with `xcodegen generate`.
 
@@ -52,6 +57,7 @@ ReminderGenie/
   Intents/ReminderGenieIntents.swift  Siri and Shortcuts (App Intents)
   Views/                          List, detail, editor, add-from-template, settings
 ReminderGenieTests/               Swift Testing unit tests for Logic/
+ReminderGenieUITests/             XCUITest smoke tests that drive the app
 ```
 
 ## Notes

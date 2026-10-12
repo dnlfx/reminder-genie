@@ -134,6 +134,7 @@ struct ItemListView: View {
                         NavigationLink(value: item) {
                             ItemRowView(item: item, now: now, dueSoonDays: dueSoonDays)
                         }
+                        .accessibilityIdentifier("item-\(item.name)")
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             if !item.isPaused {
                                 Button("Replaced", systemImage: "checkmark") { replace(item) }
