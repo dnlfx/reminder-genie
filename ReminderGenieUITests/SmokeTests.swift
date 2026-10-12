@@ -15,7 +15,8 @@ final class SmokeTests: XCTestCase {
     func testAddingAnItemFromATemplate() throws {
         let app = launch(.empty)
         app.buttons["Add Your First Item"].tap()
-        app.staticTexts["Toothbrush"].tap()
+        // Scoped to the Add sheet's list; the empty screen behind it has a Toothbrush shortcut too.
+        app.collectionViews.staticTexts["Toothbrush"].tap()
         app.navigationBars["New Item"].buttons["Add"].tap()
         allowNotificationsIfAsked()
 

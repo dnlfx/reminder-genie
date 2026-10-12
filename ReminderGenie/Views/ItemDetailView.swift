@@ -266,6 +266,8 @@ private struct HistorySection: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                // One element per entry (date, note, gap), which VoiceOver reads in one go and the UI tests can find.
+                .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("history-entry")
                 .swipeActions {
                     Button("Delete", role: .destructive) {
