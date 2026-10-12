@@ -129,8 +129,13 @@ final class SmokeTests: XCTestCase {
         name.typeText("Furnace filter")
         XCTAssertTrue(add.isEnabled, "Add should be enabled once there's a name")
 
+        // Put the keyboard away and scroll the form itself; the link field is near the bottom
+        // and isn't created until it scrolls into view on smaller iPhones.
+        name.typeText("\n")
         let link = app.textFields["Reorder link (optional)"]
-        for _ in 0..<5 where !(link.exists && link.isHittable) { app.swipeUp() }
+        let form = app.collectionViews.firstMatch
+        for _ in 0..<6 where !(link.exists && link.isHittable) { form.swipeUp() }
+        XCTAssertTrue(link.waitForExistence(timeout: 2), "The reorder link field should be reachable")
         link.tap()
         link.typeText("not a link")
         XCTAssertFalse(add.isEnabled, "Add should be disabled with a broken reorder link")
