@@ -6,14 +6,17 @@ Tell it when you started the current one and how often it needs replacing. It sh
 
 ## Features
 
-- **Countdown list** grouped into Overdue, Due soon, Upcoming and Paused, with a progress ring per item.
+- **Countdown list** grouped into Overdue, Due soon, Upcoming and Paused, with a progress ring per item, a "what needs attention" summary at the top, and search.
+- **Quick actions everywhere**: swipe right to log a replacement (with Undo), swipe left to edit or delete, or long-press a row to snooze, pause, reorder, edit or delete.
 - **Local notifications**: an optional heads-up N days before, a reminder on the due day at the time you choose, and daily follow-ups if it's overdue.
 - **Act from the notification**: *Replaced it*, *Snooze 1 hour* or *Remind me tomorrow* without opening the app.
 - **Templates** for common items (2-week and monthly lenses, lens case, toothbrush and brush heads, razor blades, HVAC filter, fridge and pitcher filters, smoke detector batteries, oil change, and more), or a fully custom item.
-- **Replacement history** for every item, with the gap between replacements and your real average interval. Backdate a replacement if you forgot to log it.
+- **Replacement history** for every item, with a chart of how long each cycle actually lasted against the schedule, your average interval and on-time rate. Backdate a replacement if you forgot to log it.
 - **Spares inventory**: count boxes of lenses or spare filters. One is used each time you log a replacement, and you get a "running low" nudge at your threshold.
+- **Reorder link** per item, so restocking is one tap from the item, the row's menu or the low-stock warning.
+- **Siri and Shortcuts**: "Log a replacement in Reminder Genie", "Mark contact lenses replaced in Reminder Genie" or "What's due in Reminder Genie", no setup needed.
 - **Snooze**, **pause**, per-item reminder time, notes (brand, prescription, where to buy), icons and colors.
-- **App badge** shows how many items are overdue.
+- **App badge** shows how many items are overdue, and the list warns you if notifications are turned off. Settings can send a test notification.
 - Everything stays on the device (SwiftData). No account, no network.
 
 ## Requirements
@@ -38,12 +41,13 @@ If you prefer [XcodeGen](https://github.com/yonaskolb/XcodeGen), `project.yml` r
 
 ```
 ReminderGenie/
-  ReminderGenieApp.swift          App entry, SwiftData container
+  ReminderGenieApp.swift          App entry, shared SwiftData container
   Logic/Schedule.swift            Pure date math: due dates, status, reminder plan, history stats
   Models/TrackedItem.swift        SwiftData models: TrackedItem, ReplacementLog
   Models/ItemDraft.swift          Editable copy used by the editor
   Models/ItemTemplate.swift       Built-in templates and icon choices
-  Services/NotificationManager.swift  Scheduling, notification actions, badge
+  Services/NotificationManager.swift  Scheduling, notification actions, badge, undo
+  Intents/ReminderGenieIntents.swift  Siri and Shortcuts (App Intents)
   Views/                          List, detail, editor, add-from-template, settings
 ReminderGenieTests/               Swift Testing unit tests for Logic/
 ```
@@ -59,5 +63,5 @@ ReminderGenieTests/               Swift Testing unit tests for Logic/
 - iCloud sync across devices (SwiftData + CloudKit; the models already use CloudKit-friendly defaults)
 - Count by days worn instead of calendar days (handy for daily-wear lenses you skip some days)
 - Separate left/right eye tracking for lenses with different prescriptions
-- Siri and Shortcuts: "I put in new contacts"
-- Reorder link per item for one-tap restocking
+- Interactive widgets and Live Activities (needs an App Group, so a signing change)
+- Localization with String Catalogs (plural rules are already centralized in `pluralized`)
