@@ -71,6 +71,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -142,13 +143,8 @@ fun ItemListScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    // Swipes can report the same gesture twice; this keeps one swipe to one replacement.
-    val lastReplace = remember { mutableStateOf(0L) }
 
     fun replace(item: TrackedItem) {
-        val clock = System.currentTimeMillis()
-        if (clock - lastReplace.value < 800) return
-        lastReplace.value = clock
         val undo = graph.actions.markReplaced(item.id) ?: return
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
@@ -340,16 +336,18 @@ private fun SwipeableRow(
     val status = item.schedule().status(now, dueSoonDays)
 
     // Swiping right logs a replacement, swiping left asks to delete. Either way the row springs back.
-    val swipe = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> onReplace()
-                SwipeToDismissBoxValue.EndToStart -> onDelete()
-                SwipeToDismissBoxValue.Settled -> Unit
-            }
-            false
-        },
-    )
+    // Acting on the settled value (not in confirmValueChange) runs each action once per swipe.
+    val swipe = rememberSwipeToDismissBoxState()
+    val latestReplace by rememberUpdatedState(onReplace)
+    val latestDelete by rememberUpdatedState(onDelete)
+    LaunchedEffect(swipe.currentValue) {
+        when (swipe.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> latestReplace()
+            SwipeToDismissBoxValue.EndToStart -> latestDelete()
+            SwipeToDismissBoxValue.Settled -> return@LaunchedEffect
+        }
+        swipe.reset()
+    }
 
     Box(modifier) {
         SwipeToDismissBox(

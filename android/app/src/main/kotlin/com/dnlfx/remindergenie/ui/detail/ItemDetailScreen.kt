@@ -189,7 +189,7 @@ private fun Header(
     ) {
         val summary = DueText.short(days) + if (item.isPaused) ". Reminders paused." else ""
         Box(
-            Modifier.clearAndSetSemantics { contentDescription = summary }.testTag("countdown"),
+            Modifier.testTag("countdown").clearAndSetSemantics { contentDescription = summary },
             contentAlignment = Alignment.Center,
         ) {
             ProgressRing(

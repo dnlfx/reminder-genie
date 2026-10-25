@@ -104,6 +104,14 @@ class SmokeTest {
     private fun ComposeTestRule.waitForText(text: String, substring: Boolean = false) =
         waitFor { onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty() }
 
+    /** A deliberate drag across most of the row, like a finger, rather than an instant flick. */
+    private fun swipeRowRight(tag: String) {
+        compose.onNodeWithTag(tag).performTouchInput {
+            swipeRight(startX = left + width * 0.05f, endX = right, durationMillis = 400)
+        }
+        compose.waitForIdle()
+    }
+
     @Test fun addFromATemplateAndOpenIt() {
         launch()
         compose.onNodeWithText("Nothing to track yet").assertExists()
@@ -146,9 +154,9 @@ class SmokeTest {
         launch()
         compose.onNodeWithText("Overdue").assertExists()
 
-        compose.onNodeWithTag("item-Lenses").performTouchInput { swipeRight() }
+        swipeRowRight("item-Lenses")
+        poll { graph.store.item(lenses.id)!!.spareCount == 1 }
         compose.waitForText("Undo")
-        assertEquals(1, graph.store.item(lenses.id)!!.spareCount)
         compose.onNodeWithText("Undo").performClick()
 
         poll { graph.store.item(lenses.id)!!.spareCount == 2 }
@@ -158,7 +166,9 @@ class SmokeTest {
         compose.onNodeWithText("Overdue").assertExists()
 
         // Replacing for real moves it to Upcoming.
-        compose.onNodeWithTag("item-Lenses").performTouchInput { swipeRight() }
+        compose.waitFor { compose.onAllNodesWithText("Undo").fetchSemanticsNodes().isEmpty() }
+        swipeRowRight("item-Lenses")
+        poll { graph.store.item(lenses.id)!!.logs.size == 2 }
         compose.waitForText("Upcoming")
         assertEquals(2, graph.store.item(lenses.id)!!.logs.size)
     }
