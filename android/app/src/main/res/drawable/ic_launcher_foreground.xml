@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The iOS icon's layers (Design/AppIcon.icon), centered in the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1536"
+    android:viewportHeight="1536">
+    <group
+        android:translateX="256"
+        android:translateY="236">
+        <path
+            android:pathData="M 200 532 A 312 312 0 0 1 512 220"
+            android:strokeColor="#9687EB"
+            android:strokeWidth="36" />
+        <path
+            android:pathData="M 235 532 A 277 277 0 0 1 512 255"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="34" />
+        <path
+            android:pathData="M 512 237 A 295 295 0 1 1 217 532"
+            android:strokeColor="#FFD65A"
+            android:strokeLineCap="round"
+            android:strokeWidth="70" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M512,362 L546,498 L682,532 L546,566 L512,702 L478,566 L342,532 L478,498 Z" />
+        <path
+            android:fillColor="#FFF0C8"
+            android:pathData="M682,272 L694,320 L742,332 L694,344 L682,392 L670,344 L622,332 L670,320 Z" />
+    </group>
+</vector>
