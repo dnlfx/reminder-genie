@@ -3,7 +3,7 @@ package com.dnlfx.remindergenie
 import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
-import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
