@@ -37,6 +37,7 @@ fun HistoryChart(gaps: List<HistoryStats.Gap>, tint: Color, modifier: Modifier =
     val target = recent.lastOrNull()?.targetDays ?: 0
     val maxValue = maxOf(recent.maxOfOrNull { it.days } ?: 0, target).coerceAtLeast(1) * 1.15f
     val guide = MaterialTheme.colorScheme.onSurfaceVariant
+    val late = StatusColors.Red
     val description = recent.joinToString(prefix = "Cycle lengths, oldest first: ") {
         "${DueText.monthDay(it.replacedOn)}, ${pluralized(it.days, "day")}, ${if (it.isOnTime) "on time" else "late"}"
     }
@@ -59,7 +60,7 @@ fun HistoryChart(gaps: List<HistoryStats.Gap>, tint: Color, modifier: Modifier =
             recent.forEachIndexed { index, gap ->
                 val height = size.height * (gap.days / maxValue)
                 drawRoundRect(
-                    color = if (gap.isOnTime) tint else StatusColors.Red,
+                    color = if (gap.isOnTime) tint else late,
                     topLeft = Offset(index * slot + (slot - barWidth) / 2, size.height - height),
                     size = Size(barWidth, height),
                     cornerRadius = CornerRadius(4.dp.toPx()),
@@ -77,7 +78,7 @@ fun HistoryChart(gaps: List<HistoryStats.Gap>, tint: Color, modifier: Modifier =
         Row(verticalAlignment = Alignment.CenterVertically) {
             Legend(tint, "On time")
             Spacer(Modifier.width(16.dp))
-            Legend(StatusColors.Red, "Late")
+            Legend(late, "Late")
         }
     }
 }

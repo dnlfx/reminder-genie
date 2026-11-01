@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -88,10 +89,10 @@ class SmokeTest {
         )
 
     /** Waits for app state that isn't on screen, such as the store or posted notifications. */
-    private fun poll(timeout: Long = 5_000, condition: () -> Boolean) {
+    private fun poll(timeout: Long = 5_000, what: String = "", condition: () -> Boolean) {
         val end = System.currentTimeMillis() + timeout
         while (!condition()) {
-            if (System.currentTimeMillis() > end) throw AssertionError("Timed out waiting")
+            if (System.currentTimeMillis() > end) throw AssertionError("Timed out waiting $what".trim())
             Thread.sleep(50)
         }
     }
@@ -130,7 +131,7 @@ class SmokeTest {
     @Test fun theEditorChecksTheNameAndLink() {
         seed("Filter", startedDaysAgo = 1, everyDays = 30)
         launch()
-        compose.onNodeWithContentDescription("Add item").performClick()
+        compose.onNodeWithTag("add-item").performClick()
         compose.onNodeWithTag("custom-item").performClick()
         compose.onNodeWithTag("save").assertIsNotEnabled()
 
@@ -152,7 +153,7 @@ class SmokeTest {
     @Test fun swipeToReplaceThenUndo() {
         val lenses = seed("Lenses", startedDaysAgo = 20, everyDays = 14, spares = 2)
         launch()
-        compose.onNodeWithText("Overdue").assertExists()
+        compose.onNodeWithTag("section-OVERDUE").assertExists()
 
         swipeRowRight("item-Lenses")
         poll { graph.store.item(lenses.id)!!.spareCount == 1 }
@@ -163,14 +164,32 @@ class SmokeTest {
         val restored = graph.store.item(lenses.id)!!
         assertEquals(lenses.startDate, restored.startDate)
         assertEquals(1, restored.logs.size)
-        compose.onNodeWithText("Overdue").assertExists()
+        compose.onNodeWithTag("section-OVERDUE").assertExists()
 
         // Replacing for real moves it to Upcoming.
         compose.waitFor { compose.onAllNodesWithText("Undo").fetchSemanticsNodes().isEmpty() }
         swipeRowRight("item-Lenses")
         poll { graph.store.item(lenses.id)!!.logs.size == 2 }
-        compose.waitForText("Upcoming")
+        compose.waitForTag("section-UPCOMING")
         assertEquals(2, graph.store.item(lenses.id)!!.logs.size)
+    }
+
+    @Test fun swipeLeftDeletesWithUndo() {
+        val lenses = seed("Lenses", startedDaysAgo = 3, everyDays = 14, spares = 2)
+        seed("Filter", startedDaysAgo = 1, everyDays = 30)
+        launch()
+
+        compose.onNodeWithTag("item-Lenses").performTouchInput {
+            swipeLeft(startX = right - width * 0.1f, endX = left, durationMillis = 400)
+        }
+        compose.waitForIdle()
+        poll(what = "for the swipe to delete the item") { graph.store.item(lenses.id) == null }
+        compose.waitForText("Undo")
+        compose.onNodeWithText("Undo").performClick()
+
+        poll(what = "for Undo to restore the item") { graph.store.item(lenses.id) != null }
+        assertEquals(lenses, graph.store.item(lenses.id))
+        compose.waitForTag("item-Lenses")
     }
 
     @Test fun snoozeOnlyWhenNearlyDueAndPauseResumes() {

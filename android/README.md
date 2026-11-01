@@ -4,7 +4,7 @@ Reminder Genie for Android, in Kotlin and Jetpack Compose (Material 3): countdow
 
 ## Install it on your phone (no Play Store, no expiry)
 
-Every merge to `main` publishes a signed APK as a [GitHub release](https://github.com/dnlfx/reminder-genie/releases). Pull requests publish a preview build to the `android-preview` release.
+Every merge to `main` publishes a signed APK as the [latest release](https://github.com/dnlfx/reminder-genie/releases/latest) and removes the older ones, so the releases page only ever has the current build. Pull requests are built and tested but not released.
 
 1. On your phone, open the [latest release](https://github.com/dnlfx/reminder-genie/releases/latest) and tap **ReminderGenie.apk** under Assets.
 2. Open the download. The first time, Android asks you to allow your browser to install unknown apps: allow it, go back, and tap **Install**.
@@ -27,14 +27,15 @@ Keep a copy of the keystore and password somewhere safe. If they're lost, future
 
 ## Features
 
-- **Countdown list** grouped into Overdue, Due soon, Upcoming and Paused, with a progress ring per item, a summary of what needs attention, and search.
-- **Quick actions**: swipe right to log a replacement (with Undo), swipe left to delete, or long-press a row to snooze, pause, reorder, edit or delete.
+- **Countdown list** grouped into Overdue, Due soon, Upcoming and Paused, with a progress ring per item, a summary of what needs attention (tap a count to jump to it), and search.
+- **Quick actions**: swipe right to log a replacement or left to delete, both with Undo, or long-press a row to snooze, pause, reorder, edit or delete.
 - **Reminders**: an optional heads-up N days before, a reminder on the due day at the time you choose, and daily follow-ups if it's overdue. They're exact alarms, so they arrive on the minute, and they're rebuilt after a restart, an update or a time zone change.
 - **Act from the notification**: *Replaced it*, *Snooze 1 hour* or *Remind me tomorrow* without opening the app.
 - **Templates** for common items (lenses, toothbrush heads, razor blades, HVAC and water filters, smoke detector batteries, oil changes and more), or a custom item.
 - **History** per item, with a chart of how long each cycle lasted against the schedule, average interval and on-time rate. Backdate a replacement you forgot to log; delete the latest entry to rewind the countdown.
 - **Spares**: one is used each time you log a replacement, with a "running low" notification (with a Reorder button when the item has a link).
 - **Backup**: export everything to a JSON file and import it on another phone (Settings › Backup).
+- **Appearance**: light, dark or follow the system, in the app's own colors or your wallpaper's (Android 12+). Built for TalkBack, large text and tablets.
 - Notification counts show on launchers that support badges. Everything stays on the phone: no account, no network.
 
 ## Build and test
@@ -50,7 +51,7 @@ cd android
 
 The UI tests use the app's own storage and clear it, so run them on an emulator, not on the phone you use.
 
-CI (`.github/workflows/android.yml`) runs the unit tests, builds the signed release APK, runs the UI tests on an Android 14 emulator, then publishes the APK.
+CI (`.github/workflows/android.yml`) runs the unit tests, builds the signed release APK, runs the UI tests on an Android 14 emulator, then (on `main` only) publishes the APK as the single release.
 
 ## How it's organized
 

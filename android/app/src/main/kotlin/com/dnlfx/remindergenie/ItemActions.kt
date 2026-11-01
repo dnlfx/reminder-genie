@@ -2,6 +2,7 @@ package com.dnlfx.remindergenie
 
 import com.dnlfx.remindergenie.core.ItemStore
 import com.dnlfx.remindergenie.core.ReplacementUndo
+import com.dnlfx.remindergenie.core.TrackedItem
 import com.dnlfx.remindergenie.reminders.Reminders
 import java.time.Instant
 
@@ -27,6 +28,9 @@ class ItemActions(private val store: ItemStore, private val reminders: Reminders
         store.delete(id)
         reminders.cancelLowStock(id)
     }
+
+    /** Undoes a delete or a removed history entry; its reminders are rescheduled as usual. */
+    fun restore(snapshot: TrackedItem, index: Int? = null) = store.restore(snapshot, index)
 
     companion object {
         const val HOUR = 60 * 60 * 1000L

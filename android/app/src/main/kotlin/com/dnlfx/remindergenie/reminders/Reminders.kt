@@ -164,6 +164,7 @@ class Reminders(
         val badge = ReminderPlanner.badgeCount(store.all.map { it.reminderInput() }, firedAt)
         val notification = NotificationCompat.Builder(context, CHANNEL_REMINDERS)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(ContextCompat.getColor(context, R.color.brand))
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
@@ -188,6 +189,7 @@ class Reminders(
         }
         val builder = NotificationCompat.Builder(context, CHANNEL_INVENTORY)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(ContextCompat.getColor(context, R.color.brand))
             .setContentTitle("Running low: ${item.name}")
             .setContentText(body)
             .setAutoCancel(true)
@@ -216,6 +218,7 @@ class Reminders(
     fun showTestNotification() {
         val notification = NotificationCompat.Builder(context, CHANNEL_REMINDERS)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(ContextCompat.getColor(context, R.color.brand))
             .setContentTitle("Reminder Genie is all set")
             .setContentText("This is what a reminder looks like. Real ones have buttons to log a replacement or snooze.")
             .setStyle(

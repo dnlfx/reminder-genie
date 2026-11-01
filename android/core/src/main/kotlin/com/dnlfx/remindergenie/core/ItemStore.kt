@@ -105,6 +105,18 @@ class ItemStore(
 
     fun delete(id: String) = mutate(setOf(id)) { list -> list.filter { it.id != id } }
 
+    /**
+     * Puts an item back exactly as [snapshot] has it, for Undo after a delete or a removed history
+     * entry. A deleted item returns at [index], its old place in the list.
+     */
+    fun restore(snapshot: TrackedItem, index: Int? = null) = mutate(setOf(snapshot.id)) { list ->
+        if (list.any { it.id == snapshot.id }) {
+            list.map { if (it.id == snapshot.id) snapshot else it }
+        } else {
+            list.toMutableList().apply { add((index ?: size).coerceIn(0, size), snapshot) }
+        }
+    }
+
     /** Logs a replacement and returns what's needed to take it back. */
     fun markReplaced(id: String, date: Instant = clock(), note: String = ""): ReplacementUndo? {
         val before = item(id) ?: return null

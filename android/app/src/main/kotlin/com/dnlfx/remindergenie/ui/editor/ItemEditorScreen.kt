@@ -18,17 +18,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,7 +41,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -61,7 +62,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,8 +82,11 @@ import com.dnlfx.remindergenie.ui.components.PastDatePickerDialog
 import com.dnlfx.remindergenie.ui.components.PickerRow
 import com.dnlfx.remindergenie.ui.components.SectionCard
 import com.dnlfx.remindergenie.ui.components.StepperRow
+import com.dnlfx.remindergenie.ui.components.SwitchRow
+import com.dnlfx.remindergenie.ui.components.readableWidth
 import com.dnlfx.remindergenie.ui.components.TimePickerDialog
 import com.dnlfx.remindergenie.ui.theme.color
+import com.dnlfx.remindergenie.ui.theme.contentColorOn
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -153,8 +156,13 @@ fun ItemEditorScreen(env: UiEnv, mode: EditorMode, onClose: () -> Unit, onSaved:
                 title = { Text(if (isEditing) "Edit item" else "New item") },
                 navigationIcon = { IconButton(onClick = ::close) { Icon(Icons.Outlined.Close, contentDescription = "Cancel") } },
                 actions = {
-                    TextButton(onClick = ::save, enabled = draft.isValid, modifier = Modifier.testTag("save")) {
-                        Text(if (isEditing) "Save" else "Add", fontWeight = FontWeight.SemiBold)
+                    Button(
+                        onClick = ::save,
+                        enabled = draft.isValid,
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        modifier = Modifier.padding(end = 8.dp).testTag("save"),
+                    ) {
+                        Text(if (isEditing) "Save" else "Add")
                     }
                 },
             )
@@ -166,7 +174,8 @@ fun ItemEditorScreen(env: UiEnv, mode: EditorMode, onClose: () -> Unit, onSaved:
                 .padding(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 32.dp),
+                .padding(bottom = 32.dp)
+                .readableWidth(),
         ) {
             NameAndLook(draft, focusName = !isEditing && draft.name.isEmpty(), onChange = ::update)
             ScheduleSection(draft, isEditing, onChange = ::update)
@@ -221,8 +230,8 @@ private fun NameAndLook(draft: ItemDraft, focusName: Boolean, onChange: ((ItemDr
         }
     }
     SectionCard {
-        Row(Modifier.padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(ItemIcons.forName(draft.symbolName), draft.color.color, size = 44.dp, filled = true)
+        Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(ItemIcons.forName(draft.symbolName), draft.color.color, size = 52.dp, filled = true)
             TextField(
                 value = draft.name,
                 onValueChange = { name -> onChange { it.copy(name = name) } },
@@ -242,17 +251,22 @@ private fun NameAndLook(draft: ItemDraft, focusName: Boolean, onChange: ((ItemDr
         ) {
             for (color in ItemColor.entries) {
                 val selected = draft.color == color
+                val swatch = color.color
                 Box(
                     Modifier
-                        .padding(4.dp)
-                        .size(34.dp)
+                        .padding(2.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .then(if (selected) Modifier.border(BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface), CircleShape) else Modifier)
+                        .then(if (selected) Modifier.border(BorderStroke(2.dp, swatch), CircleShape) else Modifier)
                         .selectable(selected = selected, role = Role.RadioButton) { onChange { it.copy(color = color) } }
                         .semantics { contentDescription = color.displayName },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Box(Modifier.size(26.dp).clip(CircleShape).background(color.color))
+                    Box(Modifier.size(if (selected) 32.dp else 34.dp).clip(CircleShape).background(swatch), contentAlignment = Alignment.Center) {
+                        if (selected) {
+                            Icon(Icons.Outlined.Check, contentDescription = null, tint = contentColorOn(swatch), modifier = Modifier.size(20.dp))
+                        }
+                    }
                 }
             }
         }
@@ -260,17 +274,17 @@ private fun NameAndLook(draft: ItemDraft, focusName: Boolean, onChange: ((ItemDr
         // Icons
         FlowRow(
             Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             val tint = draft.color.color
             for (symbol in ItemTemplate.symbols) {
                 val selected = draft.symbolName == symbol.name
                 Box(
                     Modifier
-                        .padding(4.dp)
-                        .size(42.dp)
+                        .padding(2.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (selected) tint.copy(alpha = 0.22f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                        .background(if (selected) tint.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceContainerHigh)
                         .then(if (selected) Modifier.border(BorderStroke(2.dp, tint), CircleShape) else Modifier)
                         .selectable(selected = selected, role = Role.RadioButton) { onChange { it.copy(symbolName = symbol.name) } }
                         .semantics { contentDescription = symbol.label },
@@ -408,20 +422,5 @@ private fun InventorySection(draft: ItemDraft, onChange: ((ItemDraft) -> ItemDra
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("reorder-field"),
         )
         Spacer(Modifier.height(4.dp))
-    }
-}
-
-@Composable
-fun SwitchRow(label: String, checked: Boolean, modifier: Modifier = Modifier, onCheckedChange: (Boolean) -> Unit) {
-    Row(
-        modifier
-            .fillMaxWidth()
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = null)
     }
 }
