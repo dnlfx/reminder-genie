@@ -148,7 +148,7 @@ jobs:
         run: |
           gh release create "android-v1.0.${{ github.run_number }}" ReminderGenie.apk \
             --target "${{ github.sha }}" \
-            --title "Reminder Genie for Android 1.0.${{ github.run_number }}" \
+            --title "Reminder Genie 1.0.${{ github.run_number }} (latest)" \
             --notes-file notes.md \
             --latest
 
