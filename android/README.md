@@ -1,12 +1,12 @@
 # Reminder Genie for Android
 
-The Android version of Reminder Genie, in Kotlin and Jetpack Compose (Material 3). It does what the iPhone app does: countdowns for the things you replace on a schedule, reminders you can act on from the notification, spares, history and templates.
+Reminder Genie for Android, in Kotlin and Jetpack Compose (Material 3): countdowns for the things you replace on a schedule, reminders you can act on from the notification, spares, history and templates.
 
 ## Install it on your phone (no Play Store, no expiry)
 
-Every merge to `main` publishes a signed APK as a [GitHub release](../../releases). Pull requests publish a preview build to the `android-preview` release.
+Every merge to `main` publishes a signed APK as a [GitHub release](https://github.com/dnlfx/reminder-genie/releases). Pull requests publish a preview build to the `android-preview` release.
 
-1. On your phone, open the [latest release](../../releases/latest) and tap **ReminderGenie.apk** under Assets.
+1. On your phone, open the [latest release](https://github.com/dnlfx/reminder-genie/releases/latest) and tap **ReminderGenie.apk** under Assets.
 2. Open the download. The first time, Android asks you to allow your browser to install unknown apps: allow it, go back, and tap **Install**.
 3. Open Reminder Genie and allow notifications when it asks.
 
@@ -67,4 +67,4 @@ android/
   app/src/androidTest/      Compose UI tests that drive the app
 ```
 
-Items are saved as one small JSON file in the app's private storage, written atomically after each change. If the file ever can't be read, the app explains instead of starting empty, and leaves the file untouched. Item icons are stored by their iOS (SF Symbols) names and mapped to Material icons, keeping the data compatible with the iPhone app's.
+Items are saved as one small JSON file in the app's private storage, written atomically after each change. If the file ever can't be read, the app explains instead of starting empty, and leaves the file untouched. Item icons are stored by their SF Symbols names, from the original iPhone app, and mapped to Material icons.

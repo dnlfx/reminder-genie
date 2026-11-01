@@ -32,8 +32,8 @@ import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
- * Items store the iOS app's icon names (SF Symbols) so the two apps' data stays compatible.
- * This maps each one to the closest Material icon.
+ * Items store icon names in SF Symbols form, a holdover from the original iPhone app that keeps
+ * the backup format unchanged. This maps each one to the closest Material icon.
  */
 object ItemIcons {
     private val icons: Map<String, ImageVector> = mapOf(
