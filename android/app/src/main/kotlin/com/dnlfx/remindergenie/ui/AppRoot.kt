@@ -8,6 +8,11 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -16,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.NavType
@@ -161,7 +167,28 @@ private fun AppNavigation(env: UiEnv, itemToOpen: String?, onItemOpened: () -> U
         onItemOpened()
     }
 
-    NavHost(navController = nav, startDestination = Routes.LIST) {
+    // Material's shared-axis motion: screens slide a little and cross-fade, forward and back.
+    val slide = tween<IntOffset>(durationMillis = 320, easing = FastOutSlowInEasing)
+    NavHost(
+        navController = nav,
+        startDestination = Routes.LIST,
+        enterTransition = {
+            slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, slide) { it / 6 } +
+                fadeIn(tween(durationMillis = 220, delayMillis = 60))
+        },
+        exitTransition = {
+            slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, slide) { it / 6 } +
+                fadeOut(tween(durationMillis = 120))
+        },
+        popEnterTransition = {
+            slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, slide) { it / 6 } +
+                fadeIn(tween(durationMillis = 220, delayMillis = 60))
+        },
+        popExitTransition = {
+            slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, slide) { it / 6 } +
+                fadeOut(tween(durationMillis = 120))
+        },
+    ) {
         composable(Routes.LIST) {
             ItemListScreen(
                 env = env,

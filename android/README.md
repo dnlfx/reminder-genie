@@ -27,14 +27,15 @@ Keep a copy of the keystore and password somewhere safe. If they're lost, future
 
 ## Features
 
-- **Countdown list** grouped into Overdue, Due soon, Upcoming and Paused, with a progress ring per item, a summary of what needs attention, and search.
-- **Quick actions**: swipe right to log a replacement (with Undo), swipe left to delete, or long-press a row to snooze, pause, reorder, edit or delete.
+- **Countdown list** grouped into Overdue, Due soon, Upcoming and Paused, with a progress ring per item, a summary of what needs attention (tap a count to jump to it), and search.
+- **Quick actions**: swipe right to log a replacement or left to delete, both with Undo, or long-press a row to snooze, pause, reorder, edit or delete.
 - **Reminders**: an optional heads-up N days before, a reminder on the due day at the time you choose, and daily follow-ups if it's overdue. They're exact alarms, so they arrive on the minute, and they're rebuilt after a restart, an update or a time zone change.
 - **Act from the notification**: *Replaced it*, *Snooze 1 hour* or *Remind me tomorrow* without opening the app.
 - **Templates** for common items (lenses, toothbrush heads, razor blades, HVAC and water filters, smoke detector batteries, oil changes and more), or a custom item.
 - **History** per item, with a chart of how long each cycle lasted against the schedule, average interval and on-time rate. Backdate a replacement you forgot to log; delete the latest entry to rewind the countdown.
 - **Spares**: one is used each time you log a replacement, with a "running low" notification (with a Reorder button when the item has a link).
 - **Backup**: export everything to a JSON file and import it on another phone (Settings › Backup).
+- **Appearance**: light, dark or follow the system, in the app's own colors or your wallpaper's (Android 12+). Built for TalkBack, large text and tablets.
 - Notification counts show on launchers that support badges. Everything stays on the phone: no account, no network.
 
 ## Build and test

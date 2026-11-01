@@ -1,19 +1,26 @@
 package com.dnlfx.remindergenie.ui.detail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,16 +37,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dnlfx.remindergenie.core.DueText
 import com.dnlfx.remindergenie.core.Schedule
 import com.dnlfx.remindergenie.core.TrackedItem
+import com.dnlfx.remindergenie.ui.components.IconBadge
+import com.dnlfx.remindergenie.ui.components.ItemIcons
 import com.dnlfx.remindergenie.ui.components.LabeledRow
 import com.dnlfx.remindergenie.ui.components.PastDatePickerDialog
 import com.dnlfx.remindergenie.ui.components.PickerRow
 import com.dnlfx.remindergenie.ui.components.TimePickerDialog
+import com.dnlfx.remindergenie.ui.theme.color
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -72,15 +84,73 @@ fun ReplaceSheet(item: TrackedItem, onDismiss: () -> Unit, onSave: (Instant, Str
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { close() }) { Text("Cancel") }
-                Text(
-                    "Replace ${item.name}",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                )
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(bottom = 16.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(ItemIcons.forName(item.symbolName), item.color.color, size = 44.dp)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Log a replacement", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        item.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            PickerRow(label = "Replaced on", value = DueText.mediumDate(date), onClick = { pickingDate = true }, modifier = Modifier.padding(horizontal = 8.dp))
+            PickerRow(label = "At", value = DueText.time(date), onClick = { pickingTime = true }, icon = Icons.Outlined.Schedule, modifier = Modifier.padding(horizontal = 8.dp))
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Note (optional)") },
+                placeholder = { Text("New box, different brand…") },
+                shape = MaterialTheme.shapes.medium,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).testTag("replacement-note"),
+            )
+            Text(
+                "Forgot to log it? Set the date it actually happened and the countdown starts from there.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 28.dp),
+            )
+            Spacer(Modifier.height(16.dp))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(vertical = 4.dp),
+            ) {
+                if (date >= item.startDate) {
+                    val nextDue = Schedule(date, item.intervalValue, item.intervalUnit, zone).dueDate
+                    LabeledRow("Next due", DueText.mediumDate(nextDue), icon = Icons.Outlined.Event)
+                    if (item.tracksSpares) {
+                        LabeledRow("Spares after this", "${maxOf(0, item.spareCount - 1)}", icon = Icons.Outlined.Inventory2)
+                    }
+                } else {
+                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.Start) {
+                        Icon(Icons.Outlined.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            "This is before the current cycle, so it's added to history without changing the countdown.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = { close() }, modifier = Modifier.height(52.dp)) { Text("Cancel") }
                 Button(
                     onClick = {
                         if (!saving) {
@@ -90,39 +160,11 @@ fun ReplaceSheet(item: TrackedItem, onDismiss: () -> Unit, onSave: (Instant, Str
                             close { onSave(chosen, text) }
                         }
                     },
-                    modifier = Modifier.testTag("save-replacement"),
-                ) { Text("Save") }
-            }
-            Spacer(Modifier.height(8.dp))
-            PickerRow(label = "Replaced on", value = DueText.mediumDate(date), onClick = { pickingDate = true })
-            PickerRow(label = "At", value = DueText.time(date), onClick = { pickingTime = true }, icon = Icons.Outlined.Schedule)
-            OutlinedTextField(
-                value = note,
-                onValueChange = { note = it },
-                label = { Text("Note (optional)") },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("replacement-note"),
-            )
-            Text(
-                "Forgot to log it? Set the date it actually happened and the countdown starts from there.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp),
-            )
-            Spacer(Modifier.height(12.dp))
-            if (date >= item.startDate) {
-                val nextDue = Schedule(date, item.intervalValue, item.intervalUnit, zone).dueDate
-                LabeledRow("Next due", DueText.mediumDate(nextDue))
-                if (item.tracksSpares) LabeledRow("Spares after this", "${maxOf(0, item.spareCount - 1)}")
-            } else {
-                Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.Start) {
-                    Icon(Icons.Outlined.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "This is before the current cycle, so it's added to history without changing the countdown.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    modifier = Modifier.weight(1f).height(52.dp).testTag("save-replacement"),
+                ) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text("Save")
                 }
             }
         }

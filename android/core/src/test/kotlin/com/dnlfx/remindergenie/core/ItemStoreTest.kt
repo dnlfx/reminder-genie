@@ -61,6 +61,28 @@ class ItemStoreTest {
         assertEquals(item.startDate, store.item(item.id)!!.startDate)
     }
 
+    @Test fun restoringPutsADeletedItemBackInPlace() {
+        val first = addLenses()
+        val second = store.add(ItemDraft(name = "Filter", startDate = now))
+        val third = store.add(ItemDraft(name = "Toothbrush", startDate = now))
+        store.delete(second.id)
+
+        store.restore(second, index = 1)
+        assertEquals(listOf(first.id, second.id, third.id), store.all.map { it.id })
+        assertEquals(second, store.item(second.id))
+    }
+
+    @Test fun restoringUndoesARemovedHistoryEntry() {
+        val item = addLenses()
+        store.markReplaced(item.id)
+        val before = store.item(item.id)!!
+        store.deleteLog(item.id, before.sortedLogs.first().id)
+
+        store.restore(before)
+        assertEquals(before, store.item(item.id))
+        assertEquals(1, store.all.size)
+    }
+
     @Test fun pausingClearsTheSnooze() {
         val item = addLenses()
         store.snooze(item.id, 3_600_000)

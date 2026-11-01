@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="window_background">#FFFEF7FF</color>
+    <!-- Matches the light theme's surface in ui/theme/Theme.kt, so launch doesn't flash a different color. -->
+    <color name="window_background">#FFFCF8FF</color>
     <color name="icon_gradient_start">#FF5855D5</color>
     <color name="icon_gradient_end">#FF9546C8</color>
+    <!-- Tints the notification icon and its accents. -->
+    <color name="brand">#FF5451C8</color>
 </resources>
