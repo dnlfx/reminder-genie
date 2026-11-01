@@ -112,8 +112,8 @@ jobs:
   release:
     name: Publish the APK
     needs: [build, ui-tests]
-    # Not for pull requests from forks, which can't write releases.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Only merges to main publish. Pull requests are built and tested but never released.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -141,24 +141,27 @@ jobs:
               echo "> **Temporary signing key.** The repository's signing secrets aren't set yet, so a later build signed with the real key won't install over this one. Uninstall this build first, or export a backup in Settings and import it after."
               echo
             fi
-            echo "Built from ${{ github.event.pull_request.head.sha || github.sha }}."
+            echo "Built from ${{ github.sha }}."
           } > notes.md
 
-      - name: Update the preview release
-        if: github.event_name == 'pull_request'
-        run: |
-          gh release delete android-preview --cleanup-tag --yes || true
-          gh release create android-preview ReminderGenie.apk \
-            --prerelease \
-            --target "${{ github.event.pull_request.head.sha }}" \
-            --title "Reminder Genie for Android (preview from PR #${{ github.event.pull_request.number }})" \
-            --notes-file notes.md
-
       - name: Publish the release
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           gh release create "android-v1.0.${{ github.run_number }}" ReminderGenie.apk \
             --target "${{ github.sha }}" \
             --title "Reminder Genie for Android 1.0.${{ github.run_number }}" \
             --notes-file notes.md \
             --latest
+
+      # The releases page keeps just the newest build. Older releases and their tags are
+      # removed only after the new one is up, so there's always one to install.
+      - name: Remove older releases
+        env:
+          CURRENT: android-v1.0.${{ github.run_number }}
+        run: |
+          tags=$(gh release list --limit 200 --json tagName --jq '.[].tagName')
+          for tag in $tags; do
+            if [ "$tag" != "$CURRENT" ]; then
+              echo "Removing $tag"
+              gh release delete "$tag" --cleanup-tag --yes
+            fi
+          done

@@ -4,7 +4,7 @@ Reminder Genie for Android, in Kotlin and Jetpack Compose (Material 3): countdow
 
 ## Install it on your phone (no Play Store, no expiry)
 
-Every merge to `main` publishes a signed APK as a [GitHub release](https://github.com/dnlfx/reminder-genie/releases). Pull requests publish a preview build to the `android-preview` release.
+Every merge to `main` publishes a signed APK as the [latest release](https://github.com/dnlfx/reminder-genie/releases/latest) and removes the older ones, so the releases page only ever has the current build. Pull requests are built and tested but not released.
 
 1. On your phone, open the [latest release](https://github.com/dnlfx/reminder-genie/releases/latest) and tap **ReminderGenie.apk** under Assets.
 2. Open the download. The first time, Android asks you to allow your browser to install unknown apps: allow it, go back, and tap **Install**.
@@ -51,7 +51,7 @@ cd android
 
 The UI tests use the app's own storage and clear it, so run them on an emulator, not on the phone you use.
 
-CI (`.github/workflows/android.yml`) runs the unit tests, builds the signed release APK, runs the UI tests on an Android 14 emulator, then publishes the APK.
+CI (`.github/workflows/android.yml`) runs the unit tests, builds the signed release APK, runs the UI tests on an Android 14 emulator, then (on `main` only) publishes the APK as the single release.
 
 ## How it's organized
 
