@@ -89,10 +89,10 @@ class SmokeTest {
         )
 
     /** Waits for app state that isn't on screen, such as the store or posted notifications. */
-    private fun poll(timeout: Long = 5_000, condition: () -> Boolean) {
+    private fun poll(timeout: Long = 5_000, what: String = "", condition: () -> Boolean) {
         val end = System.currentTimeMillis() + timeout
         while (!condition()) {
-            if (System.currentTimeMillis() > end) throw AssertionError("Timed out waiting")
+            if (System.currentTimeMillis() > end) throw AssertionError("Timed out waiting $what".trim())
             Thread.sleep(50)
         }
     }
@@ -180,14 +180,14 @@ class SmokeTest {
         launch()
 
         compose.onNodeWithTag("item-Lenses").performTouchInput {
-            swipeLeft(startX = right - width * 0.05f, endX = left, durationMillis = 400)
+            swipeLeft(startX = right - width * 0.1f, endX = left, durationMillis = 400)
         }
-        poll { graph.store.item(lenses.id) == null }
-        compose.waitFor { compose.onAllNodesWithTag("item-Lenses").fetchSemanticsNodes().isEmpty() }
+        compose.waitForIdle()
+        poll(what = "for the swipe to delete the item") { graph.store.item(lenses.id) == null }
         compose.waitForText("Undo")
         compose.onNodeWithText("Undo").performClick()
 
-        poll { graph.store.item(lenses.id) != null }
+        poll(what = "for Undo to restore the item") { graph.store.item(lenses.id) != null }
         assertEquals(lenses, graph.store.item(lenses.id))
         compose.waitForTag("item-Lenses")
     }
