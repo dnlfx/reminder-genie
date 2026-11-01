@@ -70,7 +70,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -92,6 +91,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
@@ -181,6 +181,7 @@ fun ItemListScreen(
 
     fun delete(item: TrackedItem) {
         val index = graph.store.all.indexOfFirst { it.id == item.id }
+        if (index < 0) return
         graph.actions.delete(item.id)
         offerUndo("${item.name} deleted") { graph.actions.restore(item, index) }
     }
@@ -412,7 +413,16 @@ private fun SwipeableRow(
     // Swiping right logs a replacement, swiping left deletes (with Undo). Either way the row springs
     // back. It takes a deliberate swipe, 40% of the row, so a scroll doesn't trigger it.
     // Acting on the settled value (not in confirmValueChange) runs each action once per swipe.
-    val swipe = rememberSwipeToDismissBoxState(positionalThreshold = { distance -> distance * 0.4f })
+    // Plain remember, not rememberSwipeToDismissBoxState: that one is saved per list key, so an
+    // item brought back by Undo would come back already swiped and delete itself again.
+    val density = LocalDensity.current
+    val swipe = remember(item.id) {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            density = density,
+            positionalThreshold = { distance -> distance * 0.4f },
+        )
+    }
     val latestReplace by rememberUpdatedState(onReplace)
     val latestDelete by rememberUpdatedState(onDelete)
     LaunchedEffect(swipe.currentValue) {
