@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon: the progress ring and star in one color, as Android requires. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+    <group
+        android:pivotX="512"
+        android:pivotY="512"
+        android:scaleX="1.3"
+        android:scaleY="1.3"
+        android:translateY="-20">
+        <path
+            android:pathData="M 512 237 A 295 295 0 1 1 217 532"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="70" />
+        <path
+            android:pathData="M 235 532 A 277 277 0 0 1 512 255"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="30" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M512,362 L546,498 L682,532 L546,566 L512,702 L478,566 L342,532 L478,498 Z" />
+    </group>
+</vector>
