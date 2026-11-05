@@ -109,6 +109,9 @@ jobs:
           mkdir -p "$ANDROID_HOME/cmdline-tools"
           mv "$RUNNER_TEMP/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
+          echo "Android 17 packages available:"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list 2>/dev/null | grep -E 'android-37' || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/android" sdk list 2>&1 | grep -E '37' | head -40 || true
 
       - name: Run the UI tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -128,9 +131,8 @@ jobs:
         run: |
           results=android/app/build/outputs/androidTest-results
           [ -d "$results" ] || exit 0
-          for f in $(find "$results" -name '*.xml'); do
-            grep -B1 -A25 '<failure' "$f" || true
-          done | head -400
+          # The result file names contain spaces, so let find pass them to grep.
+          find "$results" -name '*.xml' -exec grep -h -B1 -A25 '<failure' {} + | head -400 || true
 
       - name: Keep the test results
         if: failure()
