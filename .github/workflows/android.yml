@@ -70,9 +70,18 @@ jobs:
           retention-days: 14
 
   ui-tests:
-    name: UI tests on an emulator
+    name: UI tests on Android ${{ matrix.android }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The app targets Android 17 (API 37); Android 14 keeps an older release covered.
+          - android: 14
+            api-level: 34
+          - android: 17
+            api-level: 37
     steps:
       - uses: actions/checkout@v5
 
@@ -92,7 +101,7 @@ jobs:
       - name: Run the UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -105,7 +114,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-test-results
+          name: ui-test-results-android-${{ matrix.android }}
           path: android/app/build/reports/androidTests/
           retention-days: 14
 

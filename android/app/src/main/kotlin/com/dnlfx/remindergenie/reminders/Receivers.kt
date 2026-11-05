@@ -50,6 +50,8 @@ class RescheduleReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
+            // Intent.ACTION_TIMEZONE_OFFSET_CHANGED, added in Android 17.
+            "android.intent.action.TIMEZONE_OFFSET_CHANGED",
             "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED",
             -> context.graph.reminders.rebuild()
         }

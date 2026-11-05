@@ -40,7 +40,7 @@ Keep a copy of the keystore and password somewhere safe. If they're lost, future
 
 ## Build and test
 
-Requirements: JDK 17 and the Android SDK (Android Studio Ladybug or later includes both). Open the `android/` folder in Android Studio, or from the command line:
+Requirements: JDK 17 and the Android SDK with the Android 17 (API 37) platform. Android Studio Rabbit 2 (2026.2.2) or later includes both and supports the Android Gradle plugin 9.5 this project uses. Open the `android/` folder in Android Studio, or from the command line:
 
 ```sh
 cd android
@@ -51,7 +51,7 @@ cd android
 
 The UI tests use the app's own storage and clear it, so run them on an emulator, not on the phone you use.
 
-CI (`.github/workflows/android.yml`) runs the unit tests, builds the signed release APK, runs the UI tests on an Android 14 emulator, then (on `main` only) publishes the APK as the single release.
+CI (`.github/workflows/android.yml`) runs the unit tests, builds the signed release APK, runs the UI tests on Android 14 and Android 17 emulators, then (on `main` only) publishes the APK as the single release.
 
 ## How it's organized
 
