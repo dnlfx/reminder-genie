@@ -98,6 +98,18 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The runner's preinstalled sdkmanager can't find the Android 17 packages, so swap in a
+      # current one (command-line tools 23.0) before the emulator action uses it.
+      - name: Update the Android SDK command-line tools
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/cmdline-tools.zip" \
+            https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip
+          unzip -q "$RUNNER_TEMP/cmdline-tools.zip" -d "$RUNNER_TEMP/cmdline-tools"
+          rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          mv "$RUNNER_TEMP/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
+
       - name: Run the UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -109,6 +121,16 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           working-directory: android
           script: ./gradlew --stacktrace :app:connectedDebugAndroidTest
+
+      # Prints each failing test and its stack trace, so the log says what broke.
+      - name: Show the failing tests
+        if: failure()
+        run: |
+          results=android/app/build/outputs/androidTest-results
+          [ -d "$results" ] || exit 0
+          for f in $(find "$results" -name '*.xml'); do
+            grep -B1 -A25 '<failure' "$f" || true
+          done | head -400
 
       - name: Keep the test results
         if: failure()
