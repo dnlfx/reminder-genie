@@ -70,9 +70,19 @@ jobs:
           retention-days: 14
 
   ui-tests:
-    name: UI tests on an emulator
+    name: UI tests on Android ${{ matrix.android }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The app targets Android 17 (API 37); Android 14 keeps an older release covered.
+          - android: 14
+            api-level: 34
+          # Android 17's SDK packages are versioned, as in system-images;android-37.0;...
+          - android: 17
+            api-level: "37.0"
     steps:
       - uses: actions/checkout@v5
 
@@ -92,7 +102,7 @@ jobs:
       - name: Run the UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -101,11 +111,20 @@ jobs:
           working-directory: android
           script: ./gradlew --stacktrace :app:connectedDebugAndroidTest
 
+      # Prints each failing test and its stack trace, so the log says what broke.
+      - name: Show the failing tests
+        if: failure()
+        run: |
+          results=android/app/build/outputs/androidTest-results
+          [ -d "$results" ] || exit 0
+          # The result file names contain spaces, so let find pass them to grep.
+          find "$results" -name '*.xml' -exec grep -h -B1 -A25 '<failure' {} + | head -400 || true
+
       - name: Keep the test results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-test-results
+          name: ui-test-results-android-${{ matrix.android }}
           path: android/app/build/reports/androidTests/
           retention-days: 14
 

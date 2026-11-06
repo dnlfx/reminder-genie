@@ -1,8 +1,6 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
+    // Kotlin is built into AGP 9, so there is no separate kotlin-android plugin.
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -12,12 +10,13 @@ val keystorePath: String? = System.getenv("RG_KEYSTORE_PATH")?.takeIf { it.isNot
 
 android {
     namespace = "com.dnlfx.remindergenie"
-    compileSdk = 35
+    // Android 17
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.dnlfx.remindergenie"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = versionCodeFromCi
         versionName = "1.0.$versionCodeFromCi"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -61,12 +60,6 @@ android {
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

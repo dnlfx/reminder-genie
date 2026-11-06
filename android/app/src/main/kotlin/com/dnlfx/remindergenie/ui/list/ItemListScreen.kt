@@ -75,6 +75,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -415,8 +416,11 @@ private fun SwipeableRow(
     // Acting on the settled value (not in confirmValueChange) runs each action once per swipe.
     // Plain remember, not rememberSwipeToDismissBoxState: that one is saved per list key, so an
     // item brought back by Undo would come back already swiped and delete itself again.
+    // If the spring back is interrupted (the row can move to another section mid-animation), the
+    // state would stay swiped and ignore the next swipe, so the row gets a fresh, settled one.
     val density = LocalDensity.current
-    val swipe = remember(item.id) {
+    var swipeGeneration by remember(item.id) { mutableIntStateOf(0) }
+    val swipe = remember(item.id, swipeGeneration) {
         SwipeToDismissBoxState(
             initialValue = SwipeToDismissBoxValue.Settled,
             density = density,
@@ -425,13 +429,17 @@ private fun SwipeableRow(
     }
     val latestReplace by rememberUpdatedState(onReplace)
     val latestDelete by rememberUpdatedState(onDelete)
-    LaunchedEffect(swipe.currentValue) {
+    LaunchedEffect(swipe, swipe.currentValue) {
         when (swipe.currentValue) {
             SwipeToDismissBoxValue.StartToEnd -> latestReplace()
             SwipeToDismissBoxValue.EndToStart -> latestDelete()
             SwipeToDismissBoxValue.Settled -> return@LaunchedEffect
         }
-        swipe.reset()
+        try {
+            swipe.reset()
+        } finally {
+            if (swipe.currentValue != SwipeToDismissBoxValue.Settled) swipeGeneration++
+        }
     }
 
     Box(modifier) {
